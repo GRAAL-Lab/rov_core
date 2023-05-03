@@ -126,27 +126,24 @@ struct SimulatorConfiguration {
         std::default_random_engine generator(seed);
         std::uniform_real_distribution<double> distribution(1.0 - modelErrorPercentage / 100, 1 + modelErrorPercentage / 100);
 
-        modelParams.Inertia(0,0) *= distribution(generator);
-        modelParams.Inertia(1,1) *= distribution(generator);
-        modelParams.Inertia(2,2) *= distribution(generator);
-        modelParams.cN[0] *= distribution(generator);
-        modelParams.cN[1] *= distribution(generator);
-        modelParams.cN[2] *= distribution(generator);
-        modelParams.cNneg[0] *= distribution(generator);
-        modelParams.cNneg[1] *= distribution(generator);
-        modelParams.cNneg[2] *= distribution(generator);
-        modelParams.cX[0] *= distribution(generator);
-        modelParams.cX[1] *= distribution(generator);
-        modelParams.cX[2] *= distribution(generator);
-        modelParams.cY[0] *= distribution(generator);
-        modelParams.cY[1] *= distribution(generator);
-        modelParams.cY[2] *= distribution(generator);
-        modelParams.b1_pos *= distribution(generator);
-        modelParams.b2_pos *= distribution(generator);
-        modelParams.b1_neg *= distribution(generator);
-        modelParams.b1_neg *= distribution(generator);
-        modelParams.k_pos *= distribution(generator);
-        modelParams.k_neg *= distribution(generator);
+        modelParams.m *= distribution(generator);
+        modelParams.rho *= distribution(generator);
+        modelParams.L *= distribution(generator);
+        modelParams.H *= distribution(generator);
+        modelParams.G *= distribution(generator);
+        modelParams.B *= distribution(generator);
+        for(int i=0; i<6; i++){
+            modelParams.M_a_diag(i) *= distribution(generator);
+            modelParams.D_diag(i) *= distribution(generator);
+            modelParams.K_diag(i) *= distribution(generator);
+        }
+        for(int i=0; i<36; i++){
+            modelParams.T_vector(i) *= distribution(generator);
+        }
+        for(int i=0; i<3; i++){
+            modelParams.CG(i) *= distribution(generator);
+            modelParams.CB(i) *= distribution(generator);
+        }
 
         const libconfig::Setting& root = confObj.getRoot();
         const libconfig::Setting& sensorsnoise = root["sensorsNoise"];

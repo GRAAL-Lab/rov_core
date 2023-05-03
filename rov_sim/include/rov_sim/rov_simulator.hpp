@@ -14,8 +14,7 @@
 #include "ulisse_msgs/msg/dvl_data.hpp"
 #include "ulisse_msgs/msg/fog_data.hpp"
 #include "ulisse_msgs/msg/magnetometer.hpp"
-#include "ulisse_msgs/msg/micro_loop_count.hpp"
-#include "ulisse_msgs/msg/simulated_system.hpp"
+
 #include "ulisse_msgs/msg/llc_thrusters.hpp"
 #include "ulisse_msgs/msg/thrusters_reference.hpp"
 
@@ -27,6 +26,7 @@
 #include "underwater_vehicle_model/underwater_vehicle.hpp"
 
 #include "rov_msgs/msg/simulated_system.hpp"
+#include "rov_msgs/msg/micro_loop_count.hpp"
 
 #include "GeographicLib/Geodesic.hpp"
 #include "eigen3/Eigen/Dense"
@@ -59,10 +59,13 @@ class VehicleSimulator : public rclcpp::Node {
     double vehicleTrack_, vehicleSpeed_;
 
     double n_p_, n_s_;
+    Eigen::Vector6d volt_cmd; // volt given to rov thrusters
 
     uint32_t timestamp_count_; // [200Hz counter]
     uint32_t stepssincepps_count_;
 
+    rov_msgs::msg::MicroLoopCount microLoopCountMsg_;
+    rov_msgs::msg::SimulatedSystem groundTruthMsg_;
     /* ulisse_msgs::msg::MicroLoopCount microLoopCountMsg_;
     ulisse_msgs::msg::GPSData gpsMsg_;
     ulisse_msgs::msg::Compass compassMsg_;
@@ -73,7 +76,7 @@ class VehicleSimulator : public rclcpp::Node {
     ulisse_msgs::msg::AmbientSensors ambsensMsg_;
     ulisse_msgs::msg::Magnetometer magnetometerMsg_;
     ulisse_msgs::msg::ThrustersReference appliedMotorRefMsg_;
-    rov_msgs::msg::SimulatedSystem groundTruthMsg_;
+
     ulisse_msgs::msg::LLCThrusters motorsDataMsg_;
 
     rclcpp::Publisher<ulisse_msgs::msg::MicroLoopCount>::SharedPtr microLoopCountPub_;

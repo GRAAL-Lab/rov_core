@@ -5,6 +5,7 @@
 
 #include "GeographicLib/UTMUPS.hpp"
 #include "rov_msgs/topicnames.hpp"
+
 #include "rov_sim/rov_simulator.hpp"
 
 namespace rov {
@@ -185,7 +186,16 @@ void VehicleSimulator::ExecuteStep()
 void VehicleSimulator::SimulateActuation()
 {
     // Computing vehicle acceleration
-    rovModel_.DirectDynamics(hp_, hs_, n_p_, n_s_, bodyF_relativeVelocity_, bodyF_relativeAcceleration_);
+    Eigen::Vector6d eta;
+    eta(0) = vehiclePos.latitude;
+    eta(1) = vehiclePos.longitude;
+    eta(2) = altitude_;
+
+    eta(3) = bodyF_orientation_.Yaw();
+    eta(4) = bodyF_orientation_.Pitch();
+    eta(5) = bodyF_orientation_.Roll();
+
+    rovModel_.DirectDynamics(volt_cmd, bodyF_relativeVelocity_,eta, bodyF_relativeAcceleration_);
 
     //Compute the worldF_R_bodyF
     Eigen::RotationMatrix Rz, Ry, Rx;
@@ -305,24 +315,26 @@ void VehicleSimulator::SimulateSensors()
     double gpsAltitude;
     ctb::LocalNED2LatLong(worldF_antenna, centroidLocation, gpsLatlong, gpsAltitude);
 
-    gpsMsg_.time = static_cast<double>(now_nanosecs / 1E9);
+    /*gpsMsg_.time = static_cast<double>(now_nanosecs / 1E9);
     gpsMsg_.track = vehicleTrack_;
     gpsMsg_.speed = vehicleSpeed_;
     gpsMsg_.latitude = gpsLatlong.latitude;
     gpsMsg_.longitude = gpsLatlong.longitude;
     gpsMsg_.altitude = gpsAltitude;
     gpsMsg_.gpsfixmode = ulisse_msgs::msg::GPSData::MODE3D; //3u
+    */
 
     /////   COMPASS   /////
     std::normal_distribution<double> compassNoiseR(0.0, config_->sensorsNoise.compass_stdd.x());
     std::normal_distribution<double> compassNoiseP(0.0, config_->sensorsNoise.compass_stdd.y());
     std::normal_distribution<double> compassNoiseY(0.0, config_->sensorsNoise.compass_stdd.z());
 
-    compassMsg_.stamp.sec = now_stamp_secs;
+    /*compassMsg_.stamp.sec = now_stamp_secs;
     compassMsg_.stamp.nanosec = now_stamp_nanosecs;
     compassMsg_.orientation.roll = bodyF_orientation_.Roll() + compassNoiseR(generator);
     compassMsg_.orientation.pitch = bodyF_orientation_.Pitch() + compassNoiseP(generator);
     compassMsg_.orientation.yaw = bodyF_orientation_.Yaw() + compassNoiseY(generator);
+    */
 
     /////   MAGNETOMETER   /////
     Eigen::Vector3d m = { 23186.6 * 1E-9, 0.0 * 1E-9, 41122.0 * 1E-9 };  // Example of magnetic field at lat long: 44.4056° N, 8.9463° E
@@ -333,11 +345,12 @@ void VehicleSimulator::SimulateSensors()
     std::normal_distribution<double> magnetometerNoiseY(0.0, config_->sensorsNoise.magnetometer_stdd.y());
     std::normal_distribution<double> magnetometerNoiseZ(0.0, config_->sensorsNoise.magnetometer_stdd.z());
 
-    magnetometerMsg_.stamp.sec = now_stamp_secs;
+    /*magnetometerMsg_.stamp.sec = now_stamp_secs;
     magnetometerMsg_.stamp.nanosec = now_stamp_nanosecs;
     magnetometerMsg_.orthogonalstrength[0] = ned_m.x() + magnetometerNoiseX(generator);
     magnetometerMsg_.orthogonalstrength[1] = ned_m.y() + magnetometerNoiseY(generator);
     magnetometerMsg_.orthogonalstrength[2] = ned_m.z() + magnetometerNoiseZ(generator);
+    */
 
     /////   IMU   /////
     /// Imu: Orientation
@@ -345,13 +358,14 @@ void VehicleSimulator::SimulateSensors()
     //std::normal_distribution<double> orientusNoiseY(0.0, config_->sensorsNoise.orientus_stdd.y());
     //std::normal_distribution<double> orientusNoiseZ(0.0, config_->sensorsNoise.orientus_stdd.z());
 
-    imuMsg_.stamp.sec = now_stamp_secs;
+    /********imuMsg_.stamp.sec = now_stamp_secs;
     imuMsg_.stamp.nanosec = now_stamp_nanosecs;
     Eigen::RotationMatrix bodyF_R_orientus = rml::EulerRPY(config_->bodyF_imu_sensor_pose.AngularVector()).ToRotationMatrix();
     rml::EulerRPY imuF_orientation = Eigen::RotationMatrix(bodyF_orientation_.ToRotationMatrix() * bodyF_R_orientus).ToEulerRPY();
     imuMsg_.orientation.roll = imuF_orientation.Roll() + compassNoiseR(generator);
     imuMsg_.orientation.pitch = imuF_orientation.Pitch() + compassNoiseP(generator);
     imuMsg_.orientation.yaw = imuF_orientation.Yaw() + compassNoiseY(generator);
+    */
 
     /// Imu: Linear Velocity
     ///
@@ -370,21 +384,22 @@ void VehicleSimulator::SimulateSensors()
     std::normal_distribution<double> accelerometerNoiseY(0.0, config_->sensorsNoise.accelerometer_stdd.y());
     std::normal_distribution<double> accelerometerNoiseZ(0.0, config_->sensorsNoise.accelerometer_stdd.z());
 
-    imuMsg_.stamp.sec = now_stamp_secs;
-    imuMsg_.stamp.nanosec = now_stamp_nanosecs;
+    //imuMsg_.stamp.sec = now_stamp_secs;
+    //imuMsg_.stamp.nanosec = now_stamp_nanosecs;
     Eigen::Vector6d bodyF_relativeAcceleration;
     Eigen::Vector3d worldF_gravity = { 0.0, 0.0, -9.81 };
     bodyF_relativeAcceleration.segment(0, 3) = bodyF_relativeAcceleration_projected_.segment(0, 3) + worldF_R_bodyF_.transpose() * worldF_gravity;
 
-    // Matrice di corpo rigido per le accelerazioni? (TODO -> RICERCA/RICAVA FORMULA)
-    //Eigen::Matrix6d bodyF_RBM_imu = config_->bodyF_imu_sensor_pose.LinearVector().GetRigidBodyMatrix();
-    //Eigen::Vector6d bodyF_relativeAcceleration_imu = bodyF_RBM_imu * bodyF_relativeAcceleration;
+    // !!!!Matrice di corpo rigido per le accelerazioni? (TODO -> RICERCA/RICAVA FORMULA)
+    // !Eigen::Matrix6d bodyF_RBM_imu = config_->bodyF_imu_sensor_pose.LinearVector().GetRigidBodyMatrix();
+    // !Eigen::Vector6d bodyF_relativeAcceleration_imu = bodyF_RBM_imu * bodyF_relativeAcceleration;
     Eigen::RotationMatrix bodyF_R_imu = rml::EulerRPY(config_->bodyF_imu_sensor_pose.AngularVector()).ToRotationMatrix();
     Eigen::Vector3d imuF_relativeLinearAcceleration = bodyF_R_imu.transpose() * bodyF_relativeAcceleration.LinearVector();
 
-    imuMsg_.accelerometer[0] = imuF_relativeLinearAcceleration.x() + accelerometerNoiseX(generator);
+    /*imuMsg_.accelerometer[0] = imuF_relativeLinearAcceleration.x() + accelerometerNoiseX(generator);
     imuMsg_.accelerometer[1] = imuF_relativeLinearAcceleration.y() + accelerometerNoiseY(generator);
     imuMsg_.accelerometer[2] = imuF_relativeLinearAcceleration.z() + accelerometerNoiseZ(generator);
+    */
 
     /// Imu: Gyroscope (raw)
     std::normal_distribution<double> gyroNoiseX(0.0, config_->sensorsNoise.gyro_stdd.x());
@@ -403,9 +418,9 @@ void VehicleSimulator::SimulateSensors()
     bodyF_relativeAngularVelocity(1) = bodyF_relativeVelocity_(4) + bodyF_wavesEffects_(4);
     bodyF_relativeAngularVelocity(2) = bodyF_relativeVelocity_(5);
 
-    imuMsg_.gyro[0] = bodyF_relativeAngularVelocity(0) + gyroNoiseX(generator) + bx;
-    imuMsg_.gyro[1] = bodyF_relativeAngularVelocity(1) + gyroNoiseY(generator) + by;
-    imuMsg_.gyro[2] = bodyF_relativeAngularVelocity(2) + gyroNoiseZ(generator) + bz;
+    //imuMsg_.gyro[0] = bodyF_relativeAngularVelocity(0) + gyroNoiseX(generator) + bx;
+    //imuMsg_.gyro[1] = bodyF_relativeAngularVelocity(1) + gyroNoiseY(generator) + by;
+    //imuMsg_.gyro[2] = bodyF_relativeAngularVelocity(2) + gyroNoiseZ(generator) + bz;
 
     /// Imu: Magnetometer
     ///
@@ -416,8 +431,8 @@ void VehicleSimulator::SimulateSensors()
     std::normal_distribution<double> dvlNoiseY(0.0, config_->sensorsNoise.dvl_stdd.y());
     std::normal_distribution<double> dvlNoiseZ(0.0, config_->sensorsNoise.dvl_stdd.z());
 
-    dvlMsg_.stamp.sec = now_stamp_secs;
-    dvlMsg_.stamp.nanosec = now_stamp_nanosecs;
+    //dvlMsg_.stamp.sec = now_stamp_secs;
+    //dvlMsg_.stamp.nanosec = now_stamp_nanosecs;
 
     // Evaluating the rigid body matrix of the DVL w.r.t. the bodyFrame
     Eigen::Matrix6d bodyF_RBM_dvl = rml::RigidBodyMatrix(config_->bodyF_dvl_sensor_pose.LinearVector());
@@ -428,9 +443,9 @@ void VehicleSimulator::SimulateSensors()
     // Rotating the components according to the sensor positioning
     Eigen::Vector3d dvlF_relativeLinearVelocity = bodyF_R_dvl.transpose() * bodyF_relativeVelocity_dvl.LinearVector();
 
-    dvlMsg_.water_tracking[0] = dvlF_relativeLinearVelocity(0) + dvlNoiseX(generator);
-    dvlMsg_.water_tracking[1] = dvlF_relativeLinearVelocity(1) + dvlNoiseY(generator);
-    dvlMsg_.water_tracking[2] = dvlF_relativeLinearVelocity(2) + dvlNoiseZ(generator);
+    //dvlMsg_.water_tracking[0] = dvlF_relativeLinearVelocity(0) + dvlNoiseX(generator);
+   // dvlMsg_.water_tracking[1] = dvlF_relativeLinearVelocity(1) + dvlNoiseY(generator);
+    //dvlMsg_.water_tracking[2] = dvlF_relativeLinearVelocity(2) + dvlNoiseZ(generator);
 
     // Projecting back the absolute vehicle velocity in worldFrame onto the bodyFrame
     Eigen::Vector6d bodyF_absoluteVelocity_ = bodyF_orientation_.ToRotationMatrix().CartesianRotationMatrix().transpose() * worldF_velocity_;
@@ -439,15 +454,15 @@ void VehicleSimulator::SimulateSensors()
     // Rotating the components according to the sensor positioning
     Eigen::Vector3d dvlF_absoluteLinearVelocity = bodyF_R_dvl.transpose() * bodyF_absoluteVelocity_dvl.LinearVector();
 
-    dvlMsg_.bottom_velocity[0] = dvlF_absoluteLinearVelocity(0) + dvlNoiseX(generator);
-    dvlMsg_.bottom_velocity[1] = dvlF_absoluteLinearVelocity(1) + dvlNoiseY(generator);
-    dvlMsg_.bottom_velocity[2] = dvlF_absoluteLinearVelocity(2) + dvlNoiseZ(generator);
+    //dvlMsg_.bottom_velocity[0] = dvlF_absoluteLinearVelocity(0) + dvlNoiseX(generator);
+    //dvlMsg_.bottom_velocity[1] = dvlF_absoluteLinearVelocity(1) + dvlNoiseY(generator);
+    //dvlMsg_.bottom_velocity[2] = dvlF_absoluteLinearVelocity(2) + dvlNoiseZ(generator);
 
 
     /////   FOG   /////
     std::normal_distribution<double> fogNoise(0.0, config_->sensorsNoise.fog_stdd);
 
-    fogMsg_.stamp.sec = now_stamp_secs;
+    /*fogMsg_.stamp.sec = now_stamp_secs;
     fogMsg_.stamp.nanosec = now_stamp_nanosecs;
     fogMsg_.angular_velocity = bodyF_relativeAngularVelocity(2) + fogNoise(generator);
 
@@ -457,6 +472,7 @@ void VehicleSimulator::SimulateSensors()
     ambsensMsg_.stamp.nanosec = now_stamp_nanosecs;
     ambsensMsg_.temperaturectrlbox = 23.0 + (rand() / static_cast<double>(RAND_MAX)) * 2.0;
     ambsensMsg_.humidityctrlbox = 50.0 + (rand() / static_cast<double>(RAND_MAX)) * 2.0;
+    */
 
 
     // Fill the ground truth msg
@@ -483,23 +499,24 @@ void VehicleSimulator::SimulateSensors()
     groundTruthMsg_.n_s = n_s_;
 
     //motor ref
-    appliedMotorRefMsg_.left_percentage = hp_;
+    /*appliedMotorRefMsg_.left_percentage = hp_;
     appliedMotorRefMsg_.right_percentage = hs_;
     
     motorsDataMsg_.stamp.sec = now_stamp_secs;
     motorsDataMsg_.stamp.nanosec = now_stamp_nanosecs;
     motorsDataMsg_.left.motor_speed = n_p_; //ulisseModel.PercentageToRPM(hp_);
     motorsDataMsg_.right.motor_speed = n_s_; //ulisseModel.PercentageToRPM(hs_);
+    */
 }
 
 void VehicleSimulator::PublishSensors()
 {
-    microLoopCountPub_->publish(microLoopCountMsg_);
+    //microLoopCountPub_->publish(microLoopCountMsg_);
     simulatedSystemPub_->publish(groundTruthMsg_);
-    appliedMotorRefPub_->publish(appliedMotorRefMsg_);
-    motorsDataPub_->publish(motorsDataMsg_);
+    //appliedMotorRefPub_->publish(appliedMotorRefMsg_);
+    //motorsDataPub_->publish(motorsDataMsg_);
 
-    if (static_cast<int>(timestamp_count_ / 20) > gpsPubCounter_) {
+    /*if (static_cast<int>(timestamp_count_ / 20) > gpsPubCounter_) {
         gpsPubCounter_ = static_cast<int>(timestamp_count_ / 20);
         gpsPub_->publish(gpsMsg_);
     }
@@ -528,6 +545,7 @@ void VehicleSimulator::PublishSensors()
         dvlPubCounter_ = static_cast<int>(timestamp_count_ / 20);
         dvlPub_->publish(dvlMsg_);
     }
+    */
 }
 
 double VehicleSimulator::GetCurrentTimeStamp() const
@@ -536,11 +554,12 @@ double VehicleSimulator::GetCurrentTimeStamp() const
     return static_cast<double>(now_nanosecs / 1E9);
 }
 
-void VehicleSimulator::ThrustersReferenceCB(const rov_msgs::msg::ThrustersReference::SharedPtr msg)
+/* void VehicleSimulator::ThrustersReferenceCB(const rov_msgs::msg::ThrustersReference::SharedPtr msg)
 {
     hp_ = msg->left_percentage;
     hs_ = msg->right_percentage;
 
     motorTimeout_.Start();
 }
+*/
 }

@@ -45,8 +45,8 @@ target_link_libraries(VehicleSimulatorClass ${underwater_vehicle_model_LIBRARIES
   #DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY
-  logs
-  launch
+  #logs
+  #launch
   conf
   DESTINATION share/${PROJECT_NAME}/
 )
