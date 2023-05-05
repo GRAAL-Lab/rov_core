@@ -66,7 +66,8 @@ class VehicleSimulator : public rclcpp::Node {
 
     rov_msgs::msg::MicroLoopCount microLoopCountMsg_;
     rov_msgs::msg::SimulatedSystem groundTruthMsg_;
-    /* ulisse_msgs::msg::MicroLoopCount microLoopCountMsg_;
+    rov_msgs::msg::MicroLoopCount microLoopCountMsg_;
+    /*
     ulisse_msgs::msg::GPSData gpsMsg_;
     ulisse_msgs::msg::Compass compassMsg_;
     ulisse_msgs::msg::IMUData imuMsg_;
@@ -79,7 +80,7 @@ class VehicleSimulator : public rclcpp::Node {
 
     ulisse_msgs::msg::LLCThrusters motorsDataMsg_;
 
-    rclcpp::Publisher<ulisse_msgs::msg::MicroLoopCount>::SharedPtr microLoopCountPub_;
+
     rclcpp::Publisher<ulisse_msgs::msg::GPSData>::SharedPtr gpsPub_;
     rclcpp::Publisher<ulisse_msgs::msg::Compass>::SharedPtr compassPub_;
     rclcpp::Publisher<ulisse_msgs::msg::IMUData>::SharedPtr imuPub_;
@@ -98,6 +99,7 @@ class VehicleSimulator : public rclcpp::Node {
 
     futils::Timer motorTimeout_;
     rclcpp::Publisher<rov_msgs::msg::SimulatedSystem>::SharedPtr simulatedSystemPub_;
+    rclcpp::Publisher<rov_msgs::msg::MicroLoopCount>::SharedPtr microLoopCountPub_;
 
     double hp_, hs_;
 

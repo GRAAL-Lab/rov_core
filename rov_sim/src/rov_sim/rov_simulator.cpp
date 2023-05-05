@@ -40,7 +40,7 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
 
     t_start_ = t_last_ = t_now_ = std::chrono::system_clock::now();
 
-    //microLoopCountPub_ = this->create_publisher<ulisse_msgs::msg::MicroLoopCount>(ulisse_msgs::topicnames::micro_loop_count, 1);
+    microLoopCountPub_ = this->create_publisher<rov_msgs::msg::MicroLoopCount>(rov_msgs::topicnames::micro_loop_count, 1);
     //gpsPub_ = this->create_publisher<ulisse_msgs::msg::GPSData>(ulisse_msgs::topicnames::sensor_gps_data, 1);
     //compassPub_ = this->create_publisher<ulisse_msgs::msg::Compass>(ulisse_msgs::topicnames::sensor_compass, 1);
     //imuPub_ = this->create_publisher<ulisse_msgs::msg::IMUData>(ulisse_msgs::topicnames::sensor_imu, 1);
@@ -108,7 +108,7 @@ bool VehicleSimulator::LoadConfiguration(const std::string file_name)
     /////       LOAD SIMULATOR CONFIGURATION
     ///
     libconfig::Config confObjSim;
-    confPath = (ament_index_cpp::get_package_share_directory("ulisse_sim")).append("/conf/").append(file_name);
+    confPath = (ament_index_cpp::get_package_share_directory("rov_sim")).append("/conf/").append(file_name);
 
     std::cout << "PATH TO SIMULATOR CONF FILE : " << confPath << std::endl;
 
@@ -185,7 +185,7 @@ void VehicleSimulator::ExecuteStep()
 
 void VehicleSimulator::SimulateActuation()
 {
-    // Computing vehicle acceleration
+
     Eigen::Vector6d eta;
     eta(0) = vehiclePos.latitude;
     eta(1) = vehiclePos.longitude;
@@ -195,6 +195,7 @@ void VehicleSimulator::SimulateActuation()
     eta(4) = bodyF_orientation_.Pitch();
     eta(5) = bodyF_orientation_.Roll();
 
+    // Computing vehicle acceleration
     rovModel_.DirectDynamics(volt_cmd, bodyF_relativeVelocity_,eta, bodyF_relativeAcceleration_);
 
     //Compute the worldF_R_bodyF
