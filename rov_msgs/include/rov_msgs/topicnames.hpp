@@ -8,7 +8,7 @@ namespace rov_msgs {
 namespace topicnames {
 
 // LLC
-//const std::string micro_loop_count = "/ulisse/llc/micro_loop_count";
+const std::string micro_loop_count = "/rov/llc/micro_loop_count";
 //const std::string sensor_gps_data = "/ulisse/llc/sensor/gps_data";
 //const std::string sensor_gps_status = "/ulisse/llc/sensor/gps_status";
 //const std::string sensor_compass = "/ulisse/llc/sensor/compass";

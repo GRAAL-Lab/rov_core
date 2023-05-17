@@ -49,7 +49,7 @@ class VehicleSimulator : public rclcpp::Node {
     Eigen::Vector6d bodyF_relativeAcceleration_, worldF_relativeAcceleration_, bodyF_relativeAcceleration_projected_, bodyF_wavesEffects_;
 
     ctb::LatLong vehiclePos, vehiclePreviousPos, centroidLocation;
-    double altitude_;
+    double altitude_, Pre_altitude_;
 
     Eigen::Matrix3d P_;
     Eigen::Matrix6d bodyF_projection_;
@@ -66,7 +66,7 @@ class VehicleSimulator : public rclcpp::Node {
 
     rov_msgs::msg::MicroLoopCount microLoopCountMsg_;
     rov_msgs::msg::SimulatedSystem groundTruthMsg_;
-    rov_msgs::msg::MicroLoopCount microLoopCountMsg_;
+    //rov_msgs::msg::MicroLoopCount microLoopCountMsg_;
     /*
     ulisse_msgs::msg::GPSData gpsMsg_;
     ulisse_msgs::msg::Compass compassMsg_;
@@ -104,6 +104,8 @@ class VehicleSimulator : public rclcpp::Node {
     double hp_, hs_;
 
     bool realTime_;
+
+    ctb::LatLong centroid_ = { 0.0, 0.0 };          // The centroid for the convertion from/to cartesian/latlong
 
     Eigen::RotationMatrix worldF_R_bodyF_;
 

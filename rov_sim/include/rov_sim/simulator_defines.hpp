@@ -89,13 +89,13 @@ struct SimulatorConfiguration {
     SensorsNoise sensorsNoise;
     int rate;
     double modelErrorPercentage;
-    UnderwaterModelParameters modelParams;
-    Eigen::Vector2d inertialF_waterCurrent;
+    UnderwaterModelParameters ROVmodelParams;
+    Eigen::Vector3d inertialF_waterCurrent; // 3d for ROV
     Eigen::Vector3d bodyF_gps_sensor_position;
     Eigen::Vector6d bodyF_dvl_sensor_pose;
     Eigen::Vector6d bodyF_imu_sensor_pose;
     Eigen::Vector6d bodyF_fog_sensor_pose;
-    SinusoidalWave wx, wy;
+    SinusoidalWave wx, wy, wz; // 3d for ROV
 
     bool ConfigureFromFile(libconfig::Config& confObj) noexcept(false)
     {
@@ -115,7 +115,7 @@ struct SimulatorConfiguration {
             return false;
 
         // ROV model parameters
-        if (!modelParams.LoadConfiguration(confObj)) {
+        if (!ROVmodelParams.LoadConfiguration(confObj)) {
             RCLCPP_ERROR(rclcpp::get_logger("SimulatorConfiguration"), "Failed to load ROV model params");
             return false;
         }
@@ -126,23 +126,23 @@ struct SimulatorConfiguration {
         std::default_random_engine generator(seed);
         std::uniform_real_distribution<double> distribution(1.0 - modelErrorPercentage / 100, 1 + modelErrorPercentage / 100);
 
-        modelParams.m *= distribution(generator);
-        modelParams.rho *= distribution(generator);
-        modelParams.L *= distribution(generator);
-        modelParams.H *= distribution(generator);
-        modelParams.G *= distribution(generator);
-        modelParams.B *= distribution(generator);
+        ROVmodelParams.m *= distribution(generator);
+        ROVmodelParams.rho *= distribution(generator);
+        ROVmodelParams.L *= distribution(generator);
+        ROVmodelParams.H *= distribution(generator);
+        ROVmodelParams.G *= distribution(generator);
+        ROVmodelParams.B *= distribution(generator);
         for(int i=0; i<6; i++){
-            modelParams.M_a_diag(i) *= distribution(generator);
-            modelParams.D_diag(i) *= distribution(generator);
-            modelParams.K_diag(i) *= distribution(generator);
+            ROVmodelParams.M_a_diag(i) *= distribution(generator);
+            ROVmodelParams.D_diag(i) *= distribution(generator);
+            ROVmodelParams.K_diag(i) *= distribution(generator);
         }
         for(int i=0; i<36; i++){
-            modelParams.T_vector(i) *= distribution(generator);
+            ROVmodelParams.T_vector(i) *= distribution(generator);
         }
         for(int i=0; i<3; i++){
-            modelParams.CG(i) *= distribution(generator);
-            modelParams.CB(i) *= distribution(generator);
+            ROVmodelParams.CG(i) *= distribution(generator);
+            ROVmodelParams.CB(i) *= distribution(generator);
         }
 
         const libconfig::Setting& root = confObj.getRoot();
@@ -165,6 +165,13 @@ struct SimulatorConfiguration {
 
         if (!wy.ConfigureFromFile(omega_y)) {
             std::cerr << "Failed to load waves params on y " << std::endl;
+            return false;
+        }
+
+        const libconfig::Setting& omega_z = wavesSimulator["wz"];
+
+        if (!wz.ConfigureFromFile(omega_z)) {
+            std::cerr << "Failed to load waves params on z " << std::endl;
             return false;
         }
 

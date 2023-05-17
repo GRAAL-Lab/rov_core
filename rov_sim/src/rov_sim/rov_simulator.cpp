@@ -32,11 +32,12 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
         exit(EXIT_FAILURE);
     }
 
-    rovModel_.params = config_->modelParams;
+    rovModel_.params = config_->ROVmodelParams;
     //std::cout << config_->modelParams << std::endl;
 
     vehiclePos = vehiclePreviousPos = centroidLocation;
-    std::cout << "INITIAL POS: LatLong = " << vehiclePos.latitude << ", " << vehiclePos.longitude << "\n";
+    altitude_ = Pre_altitude_ = 0.0;
+    std::cout << "INITIAL POS: LatLongAlt = " << vehiclePos.latitude << ", " << vehiclePos.longitude<< ", " << altitude_ << "\n";
 
     t_start_ = t_last_ = t_now_ = std::chrono::system_clock::now();
 
@@ -57,6 +58,7 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
 
     worldF_waterVelocity_(0) = 0.0;
     worldF_waterVelocity_(1) = 0.0;
+    worldF_waterVelocity_(2) = 0.0;
 
     n_p_ = 0;
     n_s_ = 0;
@@ -67,7 +69,18 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     int msRunPeriod = 1.0 / (config_->rate) * 1000;
     // std::cout << "Controller Rate: " << rate << "Hz" << std::endl;
     runTimer_ = this->create_wall_timer(std::chrono::milliseconds(msRunPeriod), std::bind(&VehicleSimulator::Run, this));
+    std::cout << "set time " << "\n";
 
+    Eigen::Vector6d eta_initial, vel_initial;
+    Eigen::Vector3d pos_initial;
+    vel_initial.setZero();
+
+    ctb::LatLong2LocalUTM(vehiclePos, altitude_, centroid_, pos_initial);
+    //ctb::LatLong2LocalUTM(eta_initial.segment(0,3), centroid_, startP_, altitude_);
+    eta_initial.setZero();
+    eta_initial.segment(0,3) = pos_initial;
+    rovModel_.InitializeMatrices(vel_initial, eta_initial);
+    volt_cmd.setZero();
 }
 
 bool VehicleSimulator::LoadConfiguration(const std::string file_name)
@@ -78,9 +91,9 @@ bool VehicleSimulator::LoadConfiguration(const std::string file_name)
     ///////////////////////////////////////////////////////////////////////////////
     /////       LOAD CONFIGURATION FROM NAV FILTER TO READ CENTROID
     ///
-    std::string package_share_directory = ament_index_cpp::get_package_share_directory("nav_filter");
+    std::string package_share_directory = ament_index_cpp::get_package_share_directory("nav_filter_rov");
     std::string confPath = package_share_directory;
-    confPath.append("/conf/navigation_filter.conf");
+    confPath.append("/conf/navigation_filter_rov.conf");
 
     std::cout << "PATH TO NAV_FILTER CONF FILE : " << confPath << std::endl;
 
@@ -180,23 +193,22 @@ void VehicleSimulator::ExecuteStep()
     t_last_ = t_now_;
     previous_bodyF_orientation_ = bodyF_orientation_;
     vehiclePreviousPos = vehiclePos;
-    altitude_ = 0.0;
+    Pre_altitude_ = altitude_;
 }
 
 void VehicleSimulator::SimulateActuation()
 {
+    Eigen::Vector6d vehicle_eta;
+    Eigen::Vector3d vehicle_pos;
 
-    Eigen::Vector6d eta;
-    eta(0) = vehiclePos.latitude;
-    eta(1) = vehiclePos.longitude;
-    eta(2) = altitude_;
+    ctb::LatLong2LocalUTM(vehiclePos, altitude_, centroid_, vehicle_pos);
+    vehicle_eta.segment(0,3) = vehicle_pos;
+    vehicle_eta(3) = bodyF_orientation_.Yaw();
+    vehicle_eta(4) = bodyF_orientation_.Pitch();
+    vehicle_eta(5) = bodyF_orientation_.Roll();
 
-    eta(3) = bodyF_orientation_.Yaw();
-    eta(4) = bodyF_orientation_.Pitch();
-    eta(5) = bodyF_orientation_.Roll();
-
-    // Computing vehicle acceleration
-    rovModel_.DirectDynamics(volt_cmd, bodyF_relativeVelocity_,eta, bodyF_relativeAcceleration_);
+    // Computing rov acceleration
+    rovModel_.DirectDynamics(volt_cmd, vehicle_eta, bodyF_relativeVelocity_, bodyF_relativeAcceleration_);
 
     //Compute the worldF_R_bodyF
     Eigen::RotationMatrix Rz, Ry, Rx;
@@ -215,25 +227,27 @@ void VehicleSimulator::SimulateActuation()
     worldF_R_bodyF_ = Rz * Ry * Rx;
 
     // Compute the projection of the velocity on the plane (non "vola")
-    Eigen::Vector3d worldF_wFk = { 0.0, 0.0, 1.0 };
+    //Eigen::Vector3d worldF_wFk = { 0.0, 0.0, 1.0 };
 
-    bodyF_wFk_ = worldF_R_bodyF_.transpose() * worldF_wFk;
+    //bodyF_wFk_ = worldF_R_bodyF_.transpose() * worldF_wFk;
 
-    P_ = Eigen::Matrix3d::Identity() - bodyF_wFk_ * bodyF_wFk_.transpose();
+    //P_ = Eigen::Matrix3d::Identity() - bodyF_wFk_ * bodyF_wFk_.transpose();
 
-    bodyF_projection_.block(0, 0, 3, 3) = P_;
-    bodyF_projection_.block(3, 3, 3, 3) = Eigen::Matrix3d::Identity();
+    //bodyF_projection_.block(0, 0, 3, 3) = P_;
+    //bodyF_projection_.block(3, 3, 3, 3) = Eigen::Matrix3d::Identity();
 
-    bodyF_relativeAcceleration_projected_ = bodyF_projection_ * bodyF_relativeAcceleration_;
+    //bodyF_relativeAcceleration_projected_ = bodyF_projection_ * bodyF_relativeAcceleration_;
 
     worldF_waterVelocity_(0) = config_->inertialF_waterCurrent.x();
     worldF_waterVelocity_(1) = config_->inertialF_waterCurrent.y();
+    worldF_waterVelocity_(2) = config_->inertialF_waterCurrent.z(); // for ROV
 
     // Integrating the acceleration to get the vehicle velocity
-    bodyF_relativeVelocity_ = bodyF_relativeVelocity_ + bodyF_relativeAcceleration_projected_ * Ts_;
+    //bodyF_relativeVelocity_ = bodyF_relativeVelocity_ + bodyF_relativeAcceleration_projected_ * Ts_;
+    bodyF_relativeVelocity_ = bodyF_relativeVelocity_ + bodyF_relativeAcceleration_ * Ts_;
 
     //add projection on bodyF_relativeVelocity (plane constraint)
-    bodyF_relativeVelocity_ = bodyF_projection_ * bodyF_relativeVelocity_;
+    //bodyF_relativeVelocity_ = bodyF_projection_ * bodyF_relativeVelocity_;
 
     // Projecting the acceleration and velocity on the world frame
     long now_nanosecs = (std::chrono::duration_cast<std::chrono::nanoseconds>(t_now_.time_since_epoch())).count();
@@ -247,8 +261,10 @@ void VehicleSimulator::SimulateActuation()
         0.0,
         config_->wx.A * sin(2 * M_PI * config_->wx.f * t) + config_->wx.C,
         config_->wy.A * sin(2 * M_PI * config_->wy.f * t) + config_->wy.C,
-        0.0;
-    worldF_relativeAcceleration_ = bodyF_orientation_.ToRotationMatrix().CartesianRotationMatrix() * bodyF_relativeAcceleration_projected_;
+        config_->wz.A * sin(2 * M_PI * config_->wz.f * t) + config_->wz.C; // 3d ROV motion
+
+    //worldF_relativeAcceleration_ = bodyF_orientation_.ToRotationMatrix().CartesianRotationMatrix() * bodyF_relativeAcceleration_projected_;
+    worldF_relativeAcceleration_ = bodyF_orientation_.ToRotationMatrix().CartesianRotationMatrix() * bodyF_relativeAcceleration_;
     worldF_relativeVelocity_ = bodyF_orientation_.ToRotationMatrix().CartesianRotationMatrix() * (bodyF_relativeVelocity_ + bodyF_wavesEffects_);
 
     // Get the vehicle absolute velocity by adding the water current velocity
@@ -271,6 +287,7 @@ void VehicleSimulator::SimulateActuation()
     double distance_ = vehicleSpeed_ * Ts_;
 
     geod_.Direct(vehiclePreviousPos.latitude, vehiclePreviousPos.longitude, vehicleTrack_ * 180.0 / M_PI, distance_, vehiclePos.latitude, vehiclePos.longitude);
+    altitude_ = Pre_altitude_ + worldF_velocity_(2) * Ts_;
 
     // Integrating the Euler rates to get the new Euler angles and wrapping around PI
     bodyF_orientation_.Roll(std::fmod((previous_bodyF_orientation_.Roll() + rpyEulerRates(0) * Ts_) + 2 * M_PI, M_PI));
@@ -496,8 +513,8 @@ void VehicleSimulator::SimulateSensors()
     groundTruthMsg_.gyro_bias[0] = bx;
     groundTruthMsg_.gyro_bias[1] = by;
     groundTruthMsg_.gyro_bias[2] = bz;
-    groundTruthMsg_.n_p = n_p_;
-    groundTruthMsg_.n_s = n_s_;
+    //groundTruthMsg_.n_p = n_p_;
+    //groundTruthMsg_.n_s = n_s_;
 
     //motor ref
     /*appliedMotorRefMsg_.left_percentage = hp_;
@@ -512,7 +529,7 @@ void VehicleSimulator::SimulateSensors()
 
 void VehicleSimulator::PublishSensors()
 {
-    //microLoopCountPub_->publish(microLoopCountMsg_);
+    microLoopCountPub_->publish(microLoopCountMsg_);
     simulatedSystemPub_->publish(groundTruthMsg_);
     //appliedMotorRefPub_->publish(appliedMotorRefMsg_);
     //motorsDataPub_->publish(motorsDataMsg_);
