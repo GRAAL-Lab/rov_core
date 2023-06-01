@@ -8,6 +8,9 @@
 
 #include "rov_sim/rov_simulator.hpp"
 
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2_ros/static_transform_broadcaster.h"
+
 namespace rov {
 using namespace std::chrono_literals;
 using std::placeholders::_1;
@@ -51,6 +54,12 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     //fogPub_ = this->create_publisher<ulisse_msgs::msg::FOGData>(ulisse_msgs::topicnames::sensor_fog, 1);
     //appliedMotorRefPub_ = this->create_publisher<ulisse_msgs::msg::ThrustersReference>(ulisse_msgs::topicnames::llc_thrusters_applied_perc, 1);
     simulatedSystemPub_ = this->create_publisher<rov_msgs::msg::SimulatedSystem>(rov_msgs::topicnames::simulated_system, 1);
+    tfPub_ = this->create_publisher<geometry_msgs::msg::TransformStamped>(rov_msgs::topicnames::tf, 1);
+    posePub_= this->create_publisher<geometry_msgs::msg::PoseStamped>(rov_msgs::topicnames::posROV, 1);
+    //tf_static_broadcaster_ = this->create_publisher<tf2_ros::StaticTransformBroadcaster> (rov_msgs::topicnames::tf, 1);
+    //tf_static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
+    //tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
+
     //motorsDataPub_ = this->create_publisher<ulisse_msgs::msg::LLCThrusters>(ulisse_msgs::topicnames::llc_thrusters, 1);
 
     //thrustersSub_ = this->create_subscription<ulisse_msgs::msg::ThrustersReference>(ulisse_msgs::topicnames::llc_thrusters_reference_perc, 1,
@@ -77,6 +86,8 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
 
     ctb::LatLong2LocalUTM(vehiclePos, altitude_, centroid_, pos_initial);
     //ctb::LatLong2LocalUTM(eta_initial.segment(0,3), centroid_, startP_, altitude_);
+
+    // Initializing vectors and matrices
     eta_initial.setZero();
     eta_initial.segment(0,3) = pos_initial;
     rovModel_.InitializeMatrices(vel_initial, eta_initial);
@@ -516,6 +527,53 @@ void VehicleSimulator::SimulateSensors()
     //groundTruthMsg_.n_p = n_p_;
     //groundTruthMsg_.n_s = n_s_;
 
+    // tf msg
+    //geometry_msgs::msg::TransformStamped tt;
+    //tf_static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
+    tt_.header.stamp = this->get_clock()->now();
+    tt_.header.frame_id = "world";
+    tt_.child_frame_id = "ROV";
+
+    Eigen::Vector3d vehicle_pos;
+    ctb::LatLong2LocalUTM(vehiclePos, altitude_, centroid_, vehicle_pos);
+
+
+    tt_.transform.translation.x = vehicle_pos[0];
+    tt_.transform.translation.y = vehicle_pos[1];
+    tt_.transform.translation.z = vehicle_pos[2];
+    /*
+    tt_.transform.translation.x = 0.0;
+    tt_.transform.translation.y = 0.0;
+    tt_.transform.translation.z = 0.0;*/
+
+    tf2::Quaternion q;
+    q.setEuler( bodyF_orientation_.Yaw(),bodyF_orientation_.Pitch(),bodyF_orientation_.Roll());
+    //q.setRPY(
+    //    atof(transformation[5]),
+    //    atof(transformation[6]),
+    //    atof(transformation[7]));
+
+    tt_.transform.rotation.x = q.x();
+    tt_.transform.rotation.y = q.y();
+    tt_.transform.rotation.z = q.z();
+    tt_.transform.rotation.w = q.w();
+/*
+    tt_.transform.rotation.x = 0.0;
+    tt_.transform.rotation.y = 0.0;
+    tt_.transform.rotation.z = 0.0;
+    tt_.transform.rotation.w = 0.0;*/
+
+    pt_.header.stamp = this->get_clock()->now();
+    pt_.header.frame_id = "ROVframe";
+    pt_.pose.position.x = vehicle_pos[0];
+    pt_.pose.position.y = vehicle_pos[1];
+    pt_.pose.position.z = vehicle_pos[2];
+    pt_.pose.orientation.x = q.x();
+    pt_.pose.orientation.y = q.y();
+    pt_.pose.orientation.z = q.z();
+    pt_.pose.orientation.w = q.w();
+    //tf_static_broadcaster_->sendTransform(tt_);
+
     //motor ref
     /*appliedMotorRefMsg_.left_percentage = hp_;
     appliedMotorRefMsg_.right_percentage = hs_;
@@ -531,6 +589,12 @@ void VehicleSimulator::PublishSensors()
 {
     microLoopCountPub_->publish(microLoopCountMsg_);
     simulatedSystemPub_->publish(groundTruthMsg_);
+    tfPub_->publish(tt_);
+    posePub_->publish(pt_);
+    //tf_static_broadcaster_->publish(tt_);
+    //tf_static_broadcaster_->sendTransform(tt_);
+    //tf_broadcaster_->sendTransform(tt_);
+
     //appliedMotorRefPub_->publish(appliedMotorRefMsg_);
     //motorsDataPub_->publish(motorsDataMsg_);
 

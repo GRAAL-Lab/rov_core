@@ -17,6 +17,9 @@ find_package(underwater_vehicle_model REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(ctrl_toolbox REQUIRED)
 find_package(rov_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 # Add files in the tree of "Projects" view in QtCreator
 file(GLOB_RECURSE SOURCE_FILES
@@ -36,12 +39,26 @@ include_directories(
 
 ## Libraries
 add_library(VehicleSimulatorClass src/rov_sim/rov_simulator.cpp)
-ament_target_dependencies(VehicleSimulatorClass rclcpp rov_msgs ament_index_cpp) #add rov message
+ament_target_dependencies(
+    VehicleSimulatorClass
+    rclcpp
+    rov_msgs
+    ament_index_cpp
+    ) #add rov message
 target_link_libraries(VehicleSimulatorClass ${underwater_vehicle_model_LIBRARIES} Geographic rml)
 
 ## Executables
 add_executable(simulator_node src/simulator_node.cpp)
-ament_target_dependencies(simulator_node rclcpp std_msgs rov_msgs underwater_vehicle_model ament_index_cpp)
+ament_target_dependencies(
+    simulator_node
+    rclcpp std_msgs
+    rov_msgs
+    underwater_vehicle_model
+    ament_index_cpp
+    geometry_msgs
+    tf2
+    tf2_ros
+    )
 target_link_libraries(simulator_node VehicleSimulatorClass config++)
 
 install(TARGETS

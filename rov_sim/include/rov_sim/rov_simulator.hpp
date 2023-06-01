@@ -28,6 +28,13 @@
 #include "rov_msgs/msg/simulated_system.hpp"
 #include "rov_msgs/msg/micro_loop_count.hpp"
 
+#include "geometry_msgs/msg/transform_stamped.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "tf2/LinearMath/Quaternion.h"
+#include "tf2_ros/static_transform_broadcaster.h"
+#include "tf2_ros/transform_broadcaster.h"
+
 #include "GeographicLib/Geodesic.hpp"
 #include "eigen3/Eigen/Dense"
 #include "rml/RML.h"
@@ -66,6 +73,10 @@ class VehicleSimulator : public rclcpp::Node {
 
     rov_msgs::msg::MicroLoopCount microLoopCountMsg_;
     rov_msgs::msg::SimulatedSystem groundTruthMsg_;
+
+    geometry_msgs::msg::TransformStamped tt_;
+    geometry_msgs::msg::PoseStamped pt_;
+
     //rov_msgs::msg::MicroLoopCount microLoopCountMsg_;
     /*
     ulisse_msgs::msg::GPSData gpsMsg_;
@@ -100,6 +111,14 @@ class VehicleSimulator : public rclcpp::Node {
     futils::Timer motorTimeout_;
     rclcpp::Publisher<rov_msgs::msg::SimulatedSystem>::SharedPtr simulatedSystemPub_;
     rclcpp::Publisher<rov_msgs::msg::MicroLoopCount>::SharedPtr microLoopCountPub_;
+
+    rclcpp::Publisher<geometry_msgs::msg::TransformStamped>::SharedPtr tfPub_;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr posePub_;
+
+    //rclcpp::Publisher<tf2_ros::StaticTransformBroadcaster>::SharedPtr tf_static_broadcaster_;
+    //std::shared_ptr<tf2_ros::StaticTransformBroadcaster> tf_static_broadcaster_;
+    //std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+    //tf_static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
 
     double hp_, hs_;
 

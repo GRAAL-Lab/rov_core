@@ -81,6 +81,8 @@ const std::string simulated_system = "/rov/simulated_system";
 // OTHER
 //const std::string obstacle = "/ulisse/ctrl/obstacle";
 //const std::string avoidance_path = "/ulisse/ctrl/avoidance_path";
+const std::string tf = "/rov/tf";
+const std::string posROV = "/rov/posROV";
 }
 }
 

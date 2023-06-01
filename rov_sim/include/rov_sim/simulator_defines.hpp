@@ -126,6 +126,7 @@ struct SimulatorConfiguration {
         std::default_random_engine generator(seed);
         std::uniform_real_distribution<double> distribution(1.0 - modelErrorPercentage / 100, 1 + modelErrorPercentage / 100);
 
+        /*
         ROVmodelParams.m *= distribution(generator);
         ROVmodelParams.rho *= distribution(generator);
         ROVmodelParams.L *= distribution(generator);
@@ -144,6 +145,8 @@ struct SimulatorConfiguration {
             ROVmodelParams.CG(i) *= distribution(generator);
             ROVmodelParams.CB(i) *= distribution(generator);
         }
+        */
+
 
         const libconfig::Setting& root = confObj.getRoot();
         const libconfig::Setting& sensorsnoise = root["sensorsNoise"];
