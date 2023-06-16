@@ -77,6 +77,11 @@ class VehicleSimulator : public rclcpp::Node {
     geometry_msgs::msg::TransformStamped tt_;
     geometry_msgs::msg::PoseStamped pt_;
 
+    geometry_msgs::msg::TransformStamped t_stamp;
+    geometry_msgs::msg::TransformStamped t_stamp_temp;
+    geometry_msgs::msg::TransformStamped t_stamp_ROV;
+
+
     //rov_msgs::msg::MicroLoopCount microLoopCountMsg_;
     /*
     ulisse_msgs::msg::GPSData gpsMsg_;
@@ -114,6 +119,9 @@ class VehicleSimulator : public rclcpp::Node {
 
     rclcpp::Publisher<geometry_msgs::msg::TransformStamped>::SharedPtr tfPub_;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr posePub_;
+
+    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
+    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_ROV;
 
     //rclcpp::Publisher<tf2_ros::StaticTransformBroadcaster>::SharedPtr tf_static_broadcaster_;
     //std::shared_ptr<tf2_ros::StaticTransformBroadcaster> tf_static_broadcaster_;
