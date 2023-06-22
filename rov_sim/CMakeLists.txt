@@ -38,19 +38,19 @@ include_directories(
 )
 
 ## Libraries
-add_library(VehicleSimulatorClass src/rov_sim/rov_simulator.cpp)
+add_library(VehicleSimulatorClass1 src/rov_sim/rov_simulator.cpp)
 ament_target_dependencies(
-    VehicleSimulatorClass
+    VehicleSimulatorClass1
     rclcpp
     rov_msgs
     ament_index_cpp
     ) #add rov message
-target_link_libraries(VehicleSimulatorClass ${underwater_vehicle_model_LIBRARIES} Geographic rml)
+target_link_libraries(VehicleSimulatorClass1 ${underwater_vehicle_model_LIBRARIES} Geographic rml)
 
 ## Executables
-add_executable(simulator_node src/simulator_node.cpp)
+add_executable(simulator_node1 src/simulator_node.cpp)
 ament_target_dependencies(
-    simulator_node
+    simulator_node1
     rclcpp std_msgs
     rov_msgs
     underwater_vehicle_model
@@ -59,10 +59,10 @@ ament_target_dependencies(
     tf2
     tf2_ros
     )
-target_link_libraries(simulator_node VehicleSimulatorClass config++)
+target_link_libraries(simulator_node1 VehicleSimulatorClass1 config++)
 
 install(TARGETS
-  simulator_node
+  simulator_node1
   #sim_from_log_node
   DESTINATION lib/${PROJECT_NAME})
 
