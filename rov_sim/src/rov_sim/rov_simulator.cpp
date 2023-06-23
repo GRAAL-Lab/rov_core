@@ -38,6 +38,7 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     rovModel_.params = config_->ROVmodelParams;
     //std::cout << config_->modelParams << std::endl;
 
+    std::cout << "centroid" << centroidLocation << std::endl;
     vehiclePos = vehiclePreviousPos = centroidLocation;
     altitude_ = Pre_altitude_ = 0.0;
     std::cout << "INITIAL POS: LatLongAlt = " << vehiclePos.latitude << ", " << vehiclePos.longitude<< ", " << altitude_ << "\n";
@@ -86,24 +87,28 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     Eigen::Vector3d pos_initial;
     vel_initial.setZero();
 
-    ctb::LatLong2LocalUTM(vehiclePos, altitude_, centroid_, pos_initial);
-    //ctb::LatLong2LocalUTM(eta_initial.segment(0,3), centroid_, startP_, altitude_);
 
+    std::cout << "centroid_" << centroid_ << std::endl;
+    ctb::LatLong2LocalUTM(vehiclePos, altitude_, centroidLocation, pos_initial);
+    //ctb::LatLong2LocalUTM(eta_initial.segment(0,3), centroid_, startP_, altitude_);
+    std::cout << "pos_init" << pos_initial << std::endl;
+    getchar();
     // Initializing vectors and matrices
     eta_initial.setZero();
     eta_initial.segment(0,3) = pos_initial;
     rovModel_.InitializeMatrices(vel_initial, eta_initial);
     volt_cmd.setZero();
-    volt_cmd[0] = 1.0;
-    volt_cmd[1] = 1.0;
-    volt_cmd[2] = 1.0;
-    volt_cmd[3] = 1.0;
-    //volt_cmd[4] = -0.05;
-    //volt_cmd[5] = -0.05;
+    volt_cmd[0] = -0.002;
+    volt_cmd[1] = -0.002;
+    //volt_cmd[2] = 0.2;
+    //volt_cmd[3] = 0.2;
+    //volt_cmd[4] = 0.05;
+    //volt_cmd[5] = 0.05;
 
     t_stamp_temp.transform.translation.x = 0;
     t_stamp_temp.transform.translation.y = 0;
     t_stamp_temp.transform.translation.z = 0;
+    getchar();
 }
 
 bool VehicleSimulator::LoadConfiguration(const std::string file_name)
@@ -224,7 +229,7 @@ void VehicleSimulator::SimulateActuation()
     Eigen::Vector6d vehicle_eta;
     Eigen::Vector3d vehicle_pos;
 
-    ctb::LatLong2LocalUTM(vehiclePos, altitude_, centroid_, vehicle_pos);
+    ctb::LatLong2LocalUTM(vehiclePos, altitude_, centroidLocation, vehicle_pos);
     vehicle_eta.segment(0,3) = vehicle_pos;
     vehicle_eta(3) = bodyF_orientation_.Yaw();
     vehicle_eta(4) = bodyF_orientation_.Pitch();
@@ -295,8 +300,15 @@ void VehicleSimulator::SimulateActuation()
     worldF_relativeAcceleration_ = bodyF_orientation_.ToRotationMatrix().CartesianRotationMatrix() * bodyF_relativeAcceleration_;
     worldF_relativeVelocity_ = bodyF_orientation_.ToRotationMatrix().CartesianRotationMatrix() * (bodyF_relativeVelocity_ + bodyF_wavesEffects_);
 
+    std::cout << "worldF_relativeVelocity_ = "<< worldF_relativeVelocity_ << std::endl;
+
     // Get the vehicle absolute velocity by adding the water current velocity
     worldF_velocity_ = worldF_relativeVelocity_ + worldF_waterVelocity_;
+
+
+    std::cout << "worldF_velocity_ = "<< worldF_velocity_ << std::endl;
+
+    std::cout << "orientati = " << bodyF_orientation_.Roll() << " " << bodyF_orientation_.Pitch() << " " << bodyF_orientation_.Yaw()   << std::endl;
 
     // Passing from angular vehicle velocity to Euler rates
     Eigen::Matrix3d S;
@@ -322,8 +334,10 @@ void VehicleSimulator::SimulateActuation()
     //    vehiclePos.longitude = vehiclePreviousPos.longitude;
     //}
     //else
-    geod_.Direct(vehiclePreviousPos.latitude, vehiclePreviousPos.longitude, vehicleTrack_ * 180.0 / M_PI, distance_, vehiclePos.latitude, vehiclePos.longitude);
+    //geod_.Direct(vehiclePreviousPos.latitude, vehiclePreviousPos.longitude, vehicleTrack_ * 180.0 / M_PI, distance_, vehiclePos.latitude, vehiclePos.longitude);
     //{}
+    vehiclePos.latitude = vehiclePreviousPos.latitude + worldF_velocity_(0) * Ts_;
+    vehiclePos.longitude = vehiclePreviousPos.longitude + worldF_velocity_(1) * Ts_;
     altitude_ = Pre_altitude_ + worldF_velocity_(2) * Ts_;
 
     // Integrating the Euler rates to get the new Euler angles and wrapping around PI
@@ -556,8 +570,13 @@ void VehicleSimulator::SimulateSensors()
     // tf msg
     //geometry_msgs::msg::TransformStamped tt;
     //tf_static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
+
+    Eigen::Vector3d LaSpezia_centroid;
+    ctb::LatLong2LocalUTM(centroidLocation, 0.0, centroidLocation, LaSpezia_centroid);
+    //geometry_msgs::msg::TransformStamped t;
+
     Eigen::Vector3d vehicle_pos;
-    ctb::LatLong2LocalUTM(vehiclePos, altitude_, centroid_, vehicle_pos);
+    ctb::LatLong2LocalUTM(vehiclePos, altitude_, centroidLocation, vehicle_pos);
     tf2::Quaternion q;
     q.setEuler( bodyF_orientation_.Yaw(),bodyF_orientation_.Pitch(),bodyF_orientation_.Roll());
     /*
@@ -587,8 +606,8 @@ void VehicleSimulator::SimulateSensors()
     pt_.pose.orientation.w = q.w();
 
 
-    Eigen::Vector3d LaSpezia_centroid;
-    ctb::LatLong2LocalUTM(centroidLocation, 0.0, centroid_, LaSpezia_centroid);
+    //Eigen::Vector3d LaSpezia_centroid;
+    //ctb::LatLong2LocalUTM(centroidLocation, 0.0, centroid_, LaSpezia_centroid);
     //geometry_msgs::msg::TransformStamped t;
 
     t_stamp.header.stamp = this->get_clock()->now();
