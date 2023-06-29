@@ -92,23 +92,23 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     ctb::LatLong2LocalUTM(vehiclePos, altitude_, centroidLocation, pos_initial);
     //ctb::LatLong2LocalUTM(eta_initial.segment(0,3), centroid_, startP_, altitude_);
     std::cout << "pos_init" << pos_initial << std::endl;
-    getchar();
+
     // Initializing vectors and matrices
     eta_initial.setZero();
     eta_initial.segment(0,3) = pos_initial;
     rovModel_.InitializeMatrices(vel_initial, eta_initial);
     volt_cmd.setZero();
-    volt_cmd[0] = -0.002;
-    volt_cmd[1] = -0.002;
-    //volt_cmd[2] = 0.2;
-    //volt_cmd[3] = 0.2;
+    volt_cmd[0] = 0.02;
+    volt_cmd[1] = 0.02;
+    //volt_cmd[2] = 0.02;
+    //volt_cmd[3] = 0.02;
     //volt_cmd[4] = 0.05;
     //volt_cmd[5] = 0.05;
 
     t_stamp_temp.transform.translation.x = 0;
     t_stamp_temp.transform.translation.y = 0;
     t_stamp_temp.transform.translation.z = 0;
-    getchar();
+    //getchar();
 }
 
 bool VehicleSimulator::LoadConfiguration(const std::string file_name)
@@ -185,6 +185,7 @@ void VehicleSimulator::SetSampleTime(double ts)
 
 void VehicleSimulator::Run()
 {
+    //getchar();
     ExecuteStep();
     SimulateSensors();
     PublishSensors();
@@ -300,7 +301,7 @@ void VehicleSimulator::SimulateActuation()
     worldF_relativeAcceleration_ = bodyF_orientation_.ToRotationMatrix().CartesianRotationMatrix() * bodyF_relativeAcceleration_;
     worldF_relativeVelocity_ = bodyF_orientation_.ToRotationMatrix().CartesianRotationMatrix() * (bodyF_relativeVelocity_ + bodyF_wavesEffects_);
 
-    std::cout << "worldF_relativeVelocity_ = "<< worldF_relativeVelocity_ << std::endl;
+    //std::cout << "worldF_relativeVelocity_ = "<< worldF_relativeVelocity_ << std::endl;
 
     // Get the vehicle absolute velocity by adding the water current velocity
     worldF_velocity_ = worldF_relativeVelocity_ + worldF_waterVelocity_;
@@ -308,7 +309,11 @@ void VehicleSimulator::SimulateActuation()
 
     std::cout << "worldF_velocity_ = "<< worldF_velocity_ << std::endl;
 
-    std::cout << "orientati = " << bodyF_orientation_.Roll() << " " << bodyF_orientation_.Pitch() << " " << bodyF_orientation_.Yaw()   << std::endl;
+    std::cout << "orientatiYPR = " << bodyF_orientation_.Roll() << " " << bodyF_orientation_.Pitch() << " " << bodyF_orientation_.Yaw()   << std::endl;
+
+    tf2::Quaternion q;
+    q.setEuler( bodyF_orientation_.Yaw(),bodyF_orientation_.Pitch(),bodyF_orientation_.Roll());
+    std::cout << "orientatixyzw = " << q.x() << ", "<< q.y() << ", " << q.z() << ", "<< q.w()<< std::endl;
 
     // Passing from angular vehicle velocity to Euler rates
     Eigen::Matrix3d S;
@@ -327,22 +332,23 @@ void VehicleSimulator::SimulateActuation()
     double distance_ = vehicleSpeed_ * Ts_;
 
     //distance_ = 0.0;
-    double threshold = 1E-3;
+    //double threshold = 1E-3;
 
     //if( distance_ < threshold ){
     //    vehiclePos.latitude = vehiclePreviousPos.latitude;
     //    vehiclePos.longitude = vehiclePreviousPos.longitude;
     //}
     //else
-    //geod_.Direct(vehiclePreviousPos.latitude, vehiclePreviousPos.longitude, vehicleTrack_ * 180.0 / M_PI, distance_, vehiclePos.latitude, vehiclePos.longitude);
+    geod_.Direct(vehiclePreviousPos.latitude, vehiclePreviousPos.longitude, vehicleTrack_ * 180.0 / M_PI, distance_, vehiclePos.latitude, vehiclePos.longitude);
     //{}
-    vehiclePos.latitude = vehiclePreviousPos.latitude + worldF_velocity_(0) * Ts_;
-    vehiclePos.longitude = vehiclePreviousPos.longitude + worldF_velocity_(1) * Ts_;
+    //vehiclePos.latitude = vehiclePreviousPos.latitude + worldF_velocity_(0) * Ts_;
+    //vehiclePos.longitude = vehiclePreviousPos.longitude + worldF_velocity_(1) * Ts_;
     altitude_ = Pre_altitude_ + worldF_velocity_(2) * Ts_;
+    if (altitude_ > 0) altitude_ = 0;
 
-    // Integrating the Euler rates to get the new Euler angles and wrapping around PI
-    bodyF_orientation_.Roll(std::fmod((previous_bodyF_orientation_.Roll() + rpyEulerRates(0) * Ts_) + 2 * M_PI, M_PI));
-    bodyF_orientation_.Pitch(std::fmod((previous_bodyF_orientation_.Pitch() + rpyEulerRates(1) * Ts_) + 2 * M_PI, M_PI));
+    // Integrating the Euler rates to get the new Euler angles and wrapping around 2 PI
+    bodyF_orientation_.Roll(std::fmod((previous_bodyF_orientation_.Roll() + rpyEulerRates(0) * Ts_) + 2 * M_PI, 2 * M_PI));
+    bodyF_orientation_.Pitch(std::fmod((previous_bodyF_orientation_.Pitch() + rpyEulerRates(1) * Ts_) + 2 * M_PI, 2 * M_PI));
     bodyF_orientation_.Yaw(std::fmod((previous_bodyF_orientation_.Yaw() + rpyEulerRates(2) * Ts_) + 2 * M_PI, 2 * M_PI));
 }
 
@@ -560,7 +566,7 @@ void VehicleSimulator::SimulateSensors()
     groundTruthMsg_.bodyframe_angular_velocity[1] = bodyF_relativeAngularVelocity(1);
     groundTruthMsg_.bodyframe_angular_velocity[2] = bodyF_relativeAngularVelocity(2);
     groundTruthMsg_.inertialframe_water_current[0] = worldF_waterVelocity_[0];
-    groundTruthMsg_.inertialframe_water_current[1] = worldF_waterVelocity_[1];
+    groundTruthMsg_.inertialframe_water_current[1] = worldF_waterVelocity_[1]; // worldF_waterVelocity_[2]??
     groundTruthMsg_.gyro_bias[0] = bx;
     groundTruthMsg_.gyro_bias[1] = by;
     groundTruthMsg_.gyro_bias[2] = bz;
@@ -634,10 +640,10 @@ void VehicleSimulator::SimulateSensors()
     //t_stamp_temp.transform.translation.y = 0.0;
     t_stamp_temp.transform.translation.z = 0.0;
     //t_stamp_temp.transform.translation.z = t_stamp_temp.transform.translation.z + 0.0001;
-    t_stamp_temp.transform.rotation.x = 0.0;
+    t_stamp_temp.transform.rotation.x = 1.0;
     t_stamp_temp.transform.rotation.y = 0.0;
     t_stamp_temp.transform.rotation.z = 0.0;
-    t_stamp_temp.transform.rotation.w = 1.0;
+    t_stamp_temp.transform.rotation.w = 0.0;
     tf_broadcaster_->sendTransform(t_stamp_temp);
 
     t_stamp_ROV.header.stamp = this->get_clock()->now();
