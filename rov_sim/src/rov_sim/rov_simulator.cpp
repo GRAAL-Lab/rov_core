@@ -26,7 +26,7 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     //, orientusPubCounter_(0)
     //, dvlPubCounter_(0)
     //, fogPubCounter_(0)
-    , realTime_(true)
+    , realTime_(false)
 {
 
     config_ = std::make_shared<rov::SimulatorConfiguration>();
@@ -40,10 +40,14 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
 
     std::cout << "centroid" << centroidLocation << std::endl;
     vehiclePos = vehiclePreviousPos = centroidLocation;
-    altitude_ = Pre_altitude_ = 0.0;
+    altitude_ = Pre_altitude_ = 1.0;
+    previous_bodyF_orientation_.Roll(0.0); bodyF_orientation_.Roll(0.0);
+    previous_bodyF_orientation_.Pitch(0.0); bodyF_orientation_.Pitch(0.0);
+    previous_bodyF_orientation_.Yaw(M_PI); bodyF_orientation_.Yaw(M_PI);
     std::cout << "INITIAL POS: LatLongAlt = " << vehiclePos.latitude << ", " << vehiclePos.longitude<< ", " << altitude_ << "\n";
 
     t_start_ = t_last_ = t_now_ = std::chrono::system_clock::now();
+    SetSampleTime(0.0103);
 
     microLoopCountPub_ = this->create_publisher<rov_msgs::msg::MicroLoopCount>(rov_msgs::topicnames::micro_loop_count, 1);
     //gpsPub_ = this->create_publisher<ulisse_msgs::msg::GPSData>(ulisse_msgs::topicnames::sensor_gps_data, 1);
@@ -98,12 +102,12 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     eta_initial.segment(0,3) = pos_initial;
     rovModel_.InitializeMatrices(vel_initial, eta_initial);
     volt_cmd.setZero();
-    volt_cmd[0] = 0.02;
-    volt_cmd[1] = 0.02;
+    //volt_cmd[0] = 0.02;
+    //volt_cmd[1] = 0.02;
     //volt_cmd[2] = 0.02;
     //volt_cmd[3] = 0.02;
-    //volt_cmd[4] = 0.05;
-    //volt_cmd[5] = 0.05;
+    //volt_cmd[4] = 0.02;
+    //volt_cmd[5] = 0.02;
 
     t_stamp_temp.transform.translation.x = 0;
     t_stamp_temp.transform.translation.y = 0;
@@ -232,9 +236,9 @@ void VehicleSimulator::SimulateActuation()
 
     ctb::LatLong2LocalUTM(vehiclePos, altitude_, centroidLocation, vehicle_pos);
     vehicle_eta.segment(0,3) = vehicle_pos;
-    vehicle_eta(3) = bodyF_orientation_.Yaw();
+    vehicle_eta(3) = bodyF_orientation_.Roll();
     vehicle_eta(4) = bodyF_orientation_.Pitch();
-    vehicle_eta(5) = bodyF_orientation_.Roll();
+    vehicle_eta(5) = bodyF_orientation_.Yaw();
 
     // Computing rov acceleration
     rovModel_.DirectDynamics(volt_cmd, vehicle_eta, bodyF_relativeVelocity_, bodyF_relativeAcceleration_);
@@ -344,7 +348,8 @@ void VehicleSimulator::SimulateActuation()
     //vehiclePos.latitude = vehiclePreviousPos.latitude + worldF_velocity_(0) * Ts_;
     //vehiclePos.longitude = vehiclePreviousPos.longitude + worldF_velocity_(1) * Ts_;
     altitude_ = Pre_altitude_ + worldF_velocity_(2) * Ts_;
-    if (altitude_ > 0) altitude_ = 0;
+    if (altitude_ < 0) altitude_ = 0;
+    std::cout << "Ts_ = " << Ts_ << std::endl;
 
     // Integrating the Euler rates to get the new Euler angles and wrapping around 2 PI
     bodyF_orientation_.Roll(std::fmod((previous_bodyF_orientation_.Roll() + rpyEulerRates(0) * Ts_) + 2 * M_PI, 2 * M_PI));
@@ -625,10 +630,10 @@ void VehicleSimulator::SimulateSensors()
     //t_stamp.transform.translation.x = centroidLocation.latitude;
     //t_stamp.transform.translation.y = centroidLocation.longitude;
     //t_stamp.transform.translation.z = 0.0;
-    t_stamp.transform.rotation.x = 0.0;
+    t_stamp.transform.rotation.x = 1.0;
     t_stamp.transform.rotation.y = 0.0;
     t_stamp.transform.rotation.z = 0.0;
-    t_stamp.transform.rotation.w = 1.0;
+    t_stamp.transform.rotation.w = 0.0;
     tf_broadcaster_->sendTransform(t_stamp);
 
     t_stamp_temp.header.stamp = this->get_clock()->now();
