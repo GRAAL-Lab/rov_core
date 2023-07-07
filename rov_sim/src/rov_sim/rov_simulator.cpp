@@ -43,7 +43,7 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     altitude_ = Pre_altitude_ = 1.0;
     previous_bodyF_orientation_.Roll(0.0); bodyF_orientation_.Roll(0.0);
     previous_bodyF_orientation_.Pitch(0.0); bodyF_orientation_.Pitch(0.0);
-    previous_bodyF_orientation_.Yaw(M_PI); bodyF_orientation_.Yaw(M_PI);
+    previous_bodyF_orientation_.Yaw(0.0); bodyF_orientation_.Yaw(0.0);
     std::cout << "INITIAL POS: LatLongAlt = " << vehiclePos.latitude << ", " << vehiclePos.longitude<< ", " << altitude_ << "\n";
 
     t_start_ = t_last_ = t_now_ = std::chrono::system_clock::now();
@@ -102,11 +102,11 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     eta_initial.segment(0,3) = pos_initial;
     rovModel_.InitializeMatrices(vel_initial, eta_initial);
     volt_cmd.setZero();
-    //volt_cmd[0] = 0.02;
-    //volt_cmd[1] = 0.02;
+    volt_cmd[0] = 0.02;
+    volt_cmd[1] = 0.02;
     //volt_cmd[2] = 0.02;
-    //volt_cmd[3] = 0.02;
-    //volt_cmd[4] = 0.02;
+    //volt_cmd[3] = 0.2;
+    //volt_cmd[4] = -0.02;
     //volt_cmd[5] = 0.02;
 
     t_stamp_temp.transform.translation.x = 0;
@@ -575,36 +575,14 @@ void VehicleSimulator::SimulateSensors()
     groundTruthMsg_.gyro_bias[0] = bx;
     groundTruthMsg_.gyro_bias[1] = by;
     groundTruthMsg_.gyro_bias[2] = bz;
-    //groundTruthMsg_.n_p = n_p_;
-    //groundTruthMsg_.n_s = n_s_;
-
-    // tf msg
-    //geometry_msgs::msg::TransformStamped tt;
-    //tf_static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
 
     Eigen::Vector3d LaSpezia_centroid;
     ctb::LatLong2LocalUTM(centroidLocation, 0.0, centroidLocation, LaSpezia_centroid);
-    //geometry_msgs::msg::TransformStamped t;
 
     Eigen::Vector3d vehicle_pos;
     ctb::LatLong2LocalUTM(vehiclePos, altitude_, centroidLocation, vehicle_pos);
     tf2::Quaternion q;
-    q.setEuler( bodyF_orientation_.Yaw(),bodyF_orientation_.Pitch(),bodyF_orientation_.Roll());
-    /*
-    tt_.header.stamp = this->get_clock()->now();
-    tt_.header.frame_id = "world";
-    tt_.child_frame_id = "ROV";
-
-    tt_.transform.translation.x = vehicle_pos[0];
-    tt_.transform.translation.y = vehicle_pos[1];
-    tt_.transform.translation.z = vehicle_pos[2];
-
-    tt_.transform.rotation.x = q.x();
-    tt_.transform.rotation.y = q.y();
-    tt_.transform.rotation.z = q.z();
-    tt_.transform.rotation.w = q.w();
-    */
-
+    q.setEuler( bodyF_orientation_.Roll(), bodyF_orientation_.Pitch(), bodyF_orientation_.Yaw());
 
     pt_.header.stamp = this->get_clock()->now();
     pt_.header.frame_id = "ROVframe";
@@ -616,20 +594,12 @@ void VehicleSimulator::SimulateSensors()
     pt_.pose.orientation.z = q.z();
     pt_.pose.orientation.w = q.w();
 
-
-    //Eigen::Vector3d LaSpezia_centroid;
-    //ctb::LatLong2LocalUTM(centroidLocation, 0.0, centroid_, LaSpezia_centroid);
-    //geometry_msgs::msg::TransformStamped t;
-
     t_stamp.header.stamp = this->get_clock()->now();
     t_stamp.header.frame_id = "world";
     t_stamp.child_frame_id = "centroid";
     t_stamp.transform.translation.x = LaSpezia_centroid(0);
     t_stamp.transform.translation.y = LaSpezia_centroid(1);
     t_stamp.transform.translation.z = LaSpezia_centroid(2);
-    //t_stamp.transform.translation.x = centroidLocation.latitude;
-    //t_stamp.transform.translation.y = centroidLocation.longitude;
-    //t_stamp.transform.translation.z = 0.0;
     t_stamp.transform.rotation.x = 1.0;
     t_stamp.transform.rotation.y = 0.0;
     t_stamp.transform.rotation.z = 0.0;
@@ -641,10 +611,7 @@ void VehicleSimulator::SimulateSensors()
     t_stamp_temp.child_frame_id = "temp";
     t_stamp_temp.transform.translation.x = t_stamp_temp.transform.translation.x + 0.0001;
     t_stamp_temp.transform.translation.y = t_stamp_temp.transform.translation.y + 0.0001;
-    //t_stamp_temp.transform.translation.x = 0.0;
-    //t_stamp_temp.transform.translation.y = 0.0;
     t_stamp_temp.transform.translation.z = 0.0;
-    //t_stamp_temp.transform.translation.z = t_stamp_temp.transform.translation.z + 0.0001;
     t_stamp_temp.transform.rotation.x = 1.0;
     t_stamp_temp.transform.rotation.y = 0.0;
     t_stamp_temp.transform.rotation.z = 0.0;
@@ -662,15 +629,6 @@ void VehicleSimulator::SimulateSensors()
     t_stamp_ROV.transform.rotation.y = q.y();
     t_stamp_ROV.transform.rotation.z = q.z();
     t_stamp_ROV.transform.rotation.w = q.w();
-    /*
-    t_stamp_ROV.transform.translation.x = vehiclePos.latitude;
-    t_stamp_ROV.transform.translation.y = vehiclePos.longitude;
-    t_stamp_ROV.transform.translation.z = altitude_;
-    t_stamp_ROV.transform.rotation.x = q.x();
-    t_stamp_ROV.transform.rotation.y = q.y();
-    t_stamp_ROV.transform.rotation.z = q.z();
-    t_stamp_ROV.transform.rotation.w = q.w();
-*/
     tf_broadcaster_ROV->sendTransform(t_stamp_ROV);
 
 }
