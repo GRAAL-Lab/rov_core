@@ -26,7 +26,7 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     //, orientusPubCounter_(0)
     //, dvlPubCounter_(0)
     //, fogPubCounter_(0)
-    , realTime_(false)
+    , realTime_(false) // we set a manual set sample time later
 {
 
     config_ = std::make_shared<rov::SimulatorConfiguration>();
@@ -36,18 +36,21 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     }
 
     rovModel_.params = config_->ROVmodelParams;
+    rovModel_.Cable_params = config_->CableROVmodelParams;
     //std::cout << config_->modelParams << std::endl;
 
-    std::cout << "centroid" << centroidLocation << std::endl;
-    vehiclePos = vehiclePreviousPos = centroidLocation;
-    altitude_ = Pre_altitude_ = 1.0;
+    // setting initial location of the ROV
+    std::cout << "centroid" << centroidLocation_ << std::endl;
+    vehiclePos_ = vehiclePreviousPos_ = centroidLocation_;
+    altitude_ = Pre_altitude_ = 0.5;
     previous_bodyF_orientation_.Roll(0.0); bodyF_orientation_.Roll(0.0);
     previous_bodyF_orientation_.Pitch(0.0); bodyF_orientation_.Pitch(0.0);
     previous_bodyF_orientation_.Yaw(0.0); bodyF_orientation_.Yaw(0.0);
-    std::cout << "INITIAL POS: LatLongAlt = " << vehiclePos.latitude << ", " << vehiclePos.longitude<< ", " << altitude_ << "\n";
+    std::cout << "INITIAL POS: LatLongAlt = " << vehiclePos_.latitude << ", " << vehiclePos_.longitude<< ", " << altitude_ << "\n";
+
 
     t_start_ = t_last_ = t_now_ = std::chrono::system_clock::now();
-    SetSampleTime(0.0103);
+    SetSampleTime(0.0103); // delta time taken from a simulation interval
 
     microLoopCountPub_ = this->create_publisher<rov_msgs::msg::MicroLoopCount>(rov_msgs::topicnames::micro_loop_count, 1);
     //gpsPub_ = this->create_publisher<ulisse_msgs::msg::GPSData>(ulisse_msgs::topicnames::sensor_gps_data, 1);
@@ -91,27 +94,61 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     Eigen::Vector3d pos_initial;
     vel_initial.setZero();
 
-
     std::cout << "centroid_" << centroid_ << std::endl;
-    ctb::LatLong2LocalUTM(vehiclePos, altitude_, centroidLocation, pos_initial);
+    ctb::LatLong2LocalUTM(vehiclePos_, altitude_, centroidLocation_, pos_initial);
     //ctb::LatLong2LocalUTM(eta_initial.segment(0,3), centroid_, startP_, altitude_);
     std::cout << "pos_init" << pos_initial << std::endl;
 
     // Initializing vectors and matrices
     eta_initial.setZero();
     eta_initial.segment(0,3) = pos_initial;
-    rovModel_.InitializeMatrices(vel_initial, eta_initial);
+    //rovModel_.InitializeMatrices(vel_initial, eta_initial);
+
     volt_cmd.setZero();
-    volt_cmd[0] = 0.02;
-    volt_cmd[1] = 0.02;
+    //volt_cmd[0] = 0.02;
+    //volt_cmd[1] = 0.02;
     //volt_cmd[2] = 0.02;
-    //volt_cmd[3] = 0.2;
+    //volt_cmd[3] = -0.02;
     //volt_cmd[4] = -0.02;
     //volt_cmd[5] = 0.02;
 
+    // temp_frame in Rviz visualization
     t_stamp_temp.transform.translation.x = 0;
     t_stamp_temp.transform.translation.y = 0;
     t_stamp_temp.transform.translation.z = 0;
+
+    //pos_initial.x()= pos_initial.x() + 1.0;
+
+    // setting initial location of cable ends <world_F>
+    Eigen::Vector3d worldF_cable_starting;
+    ctb::LatLong cable_starting_, cable_ending_;
+    worldF_cable_starting = {1.0, 0, 0};
+    ctb::LocalUTM2LatLong(worldF_cable_starting, centroidLocation_, cableStartPos_, cableStart_altitude_);
+
+    Eigen::RotationMatrix Rz, Ry, Rx;
+    Rz << cos(bodyF_orientation_.Yaw()), -sin(bodyF_orientation_.Yaw()), 0,
+        sin(bodyF_orientation_.Yaw()), cos(bodyF_orientation_.Yaw()), 0,
+        0, 0, 1;
+
+    Ry << cos(bodyF_orientation_.Pitch()), 0, sin(bodyF_orientation_.Pitch()),
+        0, 1, 0,
+        -sin(bodyF_orientation_.Pitch()), 0, cos(bodyF_orientation_.Pitch());
+
+    Rx << 1, 0, 0,
+        0, cos(bodyF_orientation_.Roll()), -sin(bodyF_orientation_.Roll()),
+        0, sin(bodyF_orientation_.Roll()), cos(bodyF_orientation_.Roll());
+
+    worldF_R_bodyF_ = Rz * Ry * Rx;
+
+    rovModel_.InitializeMatrices(vel_initial, worldF_R_bodyF_);
+
+    bodyF_cable_ending_ = { -rovModel_.params.L / 2, 0.0, 0.0};
+    Eigen::Vector3d worldF_cable_ending;
+    worldF_cable_ending =  worldF_R_bodyF_ * bodyF_cable_ending_;
+    worldF_cable_ending =  worldF_cable_ending + pos_initial;
+    ctb::LocalUTM2LatLong(worldF_cable_ending, centroidLocation_, cableEndPos_, cableEnd_altitude_);
+    rovModel_.SetCableLength(2.0);
+    //
     //getchar();
 }
 
@@ -147,7 +184,7 @@ bool VehicleSimulator::LoadConfiguration(const std::string file_name)
         return false;
     };
 
-    centroidLocation = ctb::LatLong(centroidLocationTmp[0], centroidLocationTmp[1]);
+    centroidLocation_ = ctb::LatLong(centroidLocationTmp[0], centroidLocationTmp[1]);
 
     ///////////////////////////////////////////////////////////////////////////////
     /////       LOAD SIMULATOR CONFIGURATION
@@ -225,7 +262,7 @@ void VehicleSimulator::ExecuteStep()
 
     t_last_ = t_now_;
     previous_bodyF_orientation_ = bodyF_orientation_;
-    vehiclePreviousPos = vehiclePos;
+    vehiclePreviousPos_ = vehiclePos_;
     Pre_altitude_ = altitude_;
 }
 
@@ -234,14 +271,25 @@ void VehicleSimulator::SimulateActuation()
     Eigen::Vector6d vehicle_eta;
     Eigen::Vector3d vehicle_pos;
 
-    ctb::LatLong2LocalUTM(vehiclePos, altitude_, centroidLocation, vehicle_pos);
+    // Convert from LatLong to Local UTM for computation
+    Eigen::Vector3d cableS_pos_worldF;
+    ctb::LatLong2LocalUTM(cableStartPos_, cableStart_altitude_, centroidLocation_, cableS_pos_worldF);
+    Eigen::Vector3d cableE_pos_worldF;
+    ctb::LatLong2LocalUTM(cableEndPos_, cableEnd_altitude_, centroidLocation_, cableE_pos_worldF);
+
+    ctb::LatLong2LocalUTM(vehiclePos_, altitude_, centroidLocation_, vehicle_pos);
     vehicle_eta.segment(0,3) = vehicle_pos;
     vehicle_eta(3) = bodyF_orientation_.Roll();
     vehicle_eta(4) = bodyF_orientation_.Pitch();
     vehicle_eta(5) = bodyF_orientation_.Yaw();
 
     // Computing rov acceleration
-    rovModel_.DirectDynamics(volt_cmd, vehicle_eta, bodyF_relativeVelocity_, bodyF_relativeAcceleration_);
+    Eigen::Vector6d bodyF_cableForce;
+    float cable_length = rovModel_.GetCableCurrentLength();
+    Eigen::RotationMatrix bodyF_R_worldF = worldF_R_bodyF_.transpose();
+
+    bodyF_cableForce = rovModel_.ComputeFcable_bodyF(cableS_pos_worldF, cableE_pos_worldF, cable_length, bodyF_R_worldF);
+    rovModel_.DirectDynamics(volt_cmd, bodyF_cableForce, worldF_R_bodyF_, bodyF_relativeVelocity_, bodyF_relativeAcceleration_);
 
     //Compute the worldF_R_bodyF
     Eigen::RotationMatrix Rz, Ry, Rx;
@@ -311,13 +359,13 @@ void VehicleSimulator::SimulateActuation()
     worldF_velocity_ = worldF_relativeVelocity_ + worldF_waterVelocity_;
 
 
-    std::cout << "worldF_velocity_ = "<< worldF_velocity_ << std::endl;
+    //std::cout << "worldF_velocity_ = "<< worldF_velocity_ << std::endl;
 
-    std::cout << "orientatiYPR = " << bodyF_orientation_.Roll() << " " << bodyF_orientation_.Pitch() << " " << bodyF_orientation_.Yaw()   << std::endl;
+    //std::cout << "orientatiYPR = " << bodyF_orientation_.Roll() << " " << bodyF_orientation_.Pitch() << " " << bodyF_orientation_.Yaw()   << std::endl;
 
     tf2::Quaternion q;
     q.setEuler( bodyF_orientation_.Yaw(),bodyF_orientation_.Pitch(),bodyF_orientation_.Roll());
-    std::cout << "orientatixyzw = " << q.x() << ", "<< q.y() << ", " << q.z() << ", "<< q.w()<< std::endl;
+    //std::cout << "orientatixyzw = " << q.x() << ", "<< q.y() << ", " << q.z() << ", "<< q.w()<< std::endl;
 
     // Passing from angular vehicle velocity to Euler rates
     Eigen::Matrix3d S;
@@ -343,18 +391,24 @@ void VehicleSimulator::SimulateActuation()
     //    vehiclePos.longitude = vehiclePreviousPos.longitude;
     //}
     //else
-    geod_.Direct(vehiclePreviousPos.latitude, vehiclePreviousPos.longitude, vehicleTrack_ * 180.0 / M_PI, distance_, vehiclePos.latitude, vehiclePos.longitude);
+    geod_.Direct(vehiclePreviousPos_.latitude, vehiclePreviousPos_.longitude, vehicleTrack_ * 180.0 / M_PI, distance_, vehiclePos_.latitude, vehiclePos_.longitude);
     //{}
     //vehiclePos.latitude = vehiclePreviousPos.latitude + worldF_velocity_(0) * Ts_;
     //vehiclePos.longitude = vehiclePreviousPos.longitude + worldF_velocity_(1) * Ts_;
     altitude_ = Pre_altitude_ + worldF_velocity_(2) * Ts_;
     if (altitude_ < 0) altitude_ = 0;
-    std::cout << "Ts_ = " << Ts_ << std::endl;
+    //std::cout << "Ts_ = " << Ts_ << std::endl;
 
     // Integrating the Euler rates to get the new Euler angles and wrapping around 2 PI
     bodyF_orientation_.Roll(std::fmod((previous_bodyF_orientation_.Roll() + rpyEulerRates(0) * Ts_) + 2 * M_PI, 2 * M_PI));
     bodyF_orientation_.Pitch(std::fmod((previous_bodyF_orientation_.Pitch() + rpyEulerRates(1) * Ts_) + 2 * M_PI, 2 * M_PI));
     bodyF_orientation_.Yaw(std::fmod((previous_bodyF_orientation_.Yaw() + rpyEulerRates(2) * Ts_) + 2 * M_PI, 2 * M_PI));
+
+    // update cable ending pos
+    Eigen::Vector3d worldF_cable_ending;
+    worldF_cable_ending =  worldF_R_bodyF_ * bodyF_cable_ending_;
+    worldF_cable_ending =  worldF_cable_ending + vehicle_pos;
+    ctb::LocalUTM2LatLong(worldF_cable_ending, centroidLocation_, cableEndPos_, cableEnd_altitude_);
 }
 
 void VehicleSimulator::SimulateSensors()
@@ -381,7 +435,7 @@ void VehicleSimulator::SimulateSensors()
 
     //Transform to cartesian
     Eigen::Vector3d worldF_com, worldF_antenna;
-    ctb::LatLong2LocalNED(vehiclePos, altitude_, centroidLocation, worldF_com);
+    ctb::LatLong2LocalNED(vehiclePos_, altitude_, centroidLocation_, worldF_com);
 
     //move the gps from COM to the antenna
     worldF_antenna = worldF_com + worldF_R_bodyF_ * config_->bodyF_gps_sensor_position;
@@ -393,7 +447,7 @@ void VehicleSimulator::SimulateSensors()
 
     ctb::LatLong gpsLatlong;
     double gpsAltitude;
-    ctb::LocalNED2LatLong(worldF_antenna, centroidLocation, gpsLatlong, gpsAltitude);
+    ctb::LocalNED2LatLong(worldF_antenna, centroidLocation_, gpsLatlong, gpsAltitude);
 
     /*gpsMsg_.time = static_cast<double>(now_nanosecs / 1E9);
     gpsMsg_.track = vehicleTrack_;
@@ -558,8 +612,8 @@ void VehicleSimulator::SimulateSensors()
     // Fill the ground truth msg
     groundTruthMsg_.stamp.sec = now_stamp_secs;
     groundTruthMsg_.stamp.nanosec = now_stamp_nanosecs;
-    groundTruthMsg_.inertialframe_linear_position.latlong.latitude = vehiclePos.latitude;
-    groundTruthMsg_.inertialframe_linear_position.latlong.longitude = vehiclePos.longitude;
+    groundTruthMsg_.inertialframe_linear_position.latlong.latitude = vehiclePos_.latitude;
+    groundTruthMsg_.inertialframe_linear_position.latlong.longitude = vehiclePos_.longitude;
     groundTruthMsg_.inertialframe_linear_position.altitude = altitude_;
     groundTruthMsg_.bodyframe_angular_position.roll = bodyF_orientation_.Roll();
     groundTruthMsg_.bodyframe_angular_position.pitch = bodyF_orientation_.Pitch();
@@ -577,14 +631,13 @@ void VehicleSimulator::SimulateSensors()
     groundTruthMsg_.gyro_bias[2] = bz;
 
     Eigen::Vector3d LaSpezia_centroid;
-    ctb::LatLong2LocalUTM(centroidLocation, 0.0, centroidLocation, LaSpezia_centroid);
-
+    ctb::LatLong2LocalUTM(centroidLocation_, 0.0, centroidLocation_, LaSpezia_centroid);
     Eigen::Vector3d vehicle_pos;
-    ctb::LatLong2LocalUTM(vehiclePos, altitude_, centroidLocation, vehicle_pos);
+    ctb::LatLong2LocalUTM(vehiclePos_, altitude_, centroidLocation_, vehicle_pos);
     tf2::Quaternion q;
     q.setEuler( bodyF_orientation_.Roll(), bodyF_orientation_.Pitch(), bodyF_orientation_.Yaw());
 
-    pt_.header.stamp = this->get_clock()->now();
+    /*pt_.header.stamp = this->get_clock()->now();
     pt_.header.frame_id = "ROVframe";
     pt_.pose.position.x = vehicle_pos[0];
     pt_.pose.position.y = vehicle_pos[1];
@@ -592,7 +645,7 @@ void VehicleSimulator::SimulateSensors()
     pt_.pose.orientation.x = q.x();
     pt_.pose.orientation.y = q.y();
     pt_.pose.orientation.z = q.z();
-    pt_.pose.orientation.w = q.w();
+    pt_.pose.orientation.w = q.w();*/
 
     t_stamp.header.stamp = this->get_clock()->now();
     t_stamp.header.frame_id = "world";
@@ -606,7 +659,7 @@ void VehicleSimulator::SimulateSensors()
     t_stamp.transform.rotation.w = 0.0;
     tf_broadcaster_->sendTransform(t_stamp);
 
-    t_stamp_temp.header.stamp = this->get_clock()->now();
+    /*t_stamp_temp.header.stamp = this->get_clock()->now();
     t_stamp_temp.header.frame_id = "centroid";
     t_stamp_temp.child_frame_id = "temp";
     t_stamp_temp.transform.translation.x = t_stamp_temp.transform.translation.x + 0.0001;
@@ -616,12 +669,11 @@ void VehicleSimulator::SimulateSensors()
     t_stamp_temp.transform.rotation.y = 0.0;
     t_stamp_temp.transform.rotation.z = 0.0;
     t_stamp_temp.transform.rotation.w = 0.0;
-    tf_broadcaster_->sendTransform(t_stamp_temp);
+    tf_broadcaster_->sendTransform(t_stamp_temp);*/
 
     t_stamp_ROV.header.stamp = this->get_clock()->now();
     t_stamp_ROV.header.frame_id = "world";
     t_stamp_ROV.child_frame_id = "ROV";
-
     t_stamp_ROV.transform.translation.x = vehicle_pos[0];
     t_stamp_ROV.transform.translation.y = vehicle_pos[1];
     t_stamp_ROV.transform.translation.z = vehicle_pos[2];
@@ -629,6 +681,59 @@ void VehicleSimulator::SimulateSensors()
     t_stamp_ROV.transform.rotation.y = q.y();
     t_stamp_ROV.transform.rotation.z = q.z();
     t_stamp_ROV.transform.rotation.w = q.w();
+    tf_broadcaster_ROV->sendTransform(t_stamp_ROV);
+
+    /*t_stamp_ROV.header.stamp = this->get_clock()->now();
+    t_stamp_ROV.header.frame_id = "world";
+    t_stamp_ROV.child_frame_id = "cable_fixed";
+    t_stamp_ROV.transform.translation.x = 1.0;
+    t_stamp_ROV.transform.translation.y = 1.0;
+    t_stamp_ROV.transform.translation.z = 0.0;
+    t_stamp_ROV.transform.rotation.x = 1.0;
+    t_stamp_ROV.transform.rotation.y = 0.0;
+    t_stamp_ROV.transform.rotation.z = 0.0;
+    t_stamp_ROV.transform.rotation.w = 0.0;
+    tf_broadcaster_ROV->sendTransform(t_stamp_ROV);
+
+    t_stamp_ROV.header.stamp = this->get_clock()->now();
+    t_stamp_ROV.header.frame_id = "ROV";
+    t_stamp_ROV.child_frame_id = "cable_ROV";
+    t_stamp_ROV.transform.translation.x = -0.4;
+    t_stamp_ROV.transform.translation.y = 0.0;
+    t_stamp_ROV.transform.translation.z = 0.0;
+    t_stamp_ROV.transform.rotation.x = 0.0;
+    t_stamp_ROV.transform.rotation.y = 0.0;
+    t_stamp_ROV.transform.rotation.z = 0.0;
+    t_stamp_ROV.transform.rotation.w = 1.0; // 0 or 1
+    tf_broadcaster_ROV->sendTransform(t_stamp_ROV);*/
+
+    Eigen::Vector3d cableS_pos;
+    ctb::LatLong2LocalUTM(cableStartPos_, cableStart_altitude_, centroidLocation_, cableS_pos);
+    Eigen::Vector3d cableE_pos;
+    ctb::LatLong2LocalUTM(cableEndPos_, cableEnd_altitude_, centroidLocation_, cableE_pos);
+
+    t_stamp_ROV.header.stamp = this->get_clock()->now();
+    t_stamp_ROV.header.frame_id = "world";
+    t_stamp_ROV.child_frame_id = "cable_p1";
+    t_stamp_ROV.transform.translation.x = cableS_pos.x();
+    t_stamp_ROV.transform.translation.y = cableS_pos.y();
+    t_stamp_ROV.transform.translation.z = cableS_pos.z();
+    t_stamp_ROV.transform.rotation.x = 1.0;
+    t_stamp_ROV.transform.rotation.y = 0.0;
+    t_stamp_ROV.transform.rotation.z = 0.0;
+    t_stamp_ROV.transform.rotation.w = 0.0;
+    tf_broadcaster_ROV->sendTransform(t_stamp_ROV);
+
+    t_stamp_ROV.header.stamp = this->get_clock()->now();
+    t_stamp_ROV.header.frame_id = "world";
+    t_stamp_ROV.child_frame_id = "cable_p2";
+    t_stamp_ROV.transform.translation.x = cableE_pos.x();
+    t_stamp_ROV.transform.translation.y = cableE_pos.y();
+    t_stamp_ROV.transform.translation.z = cableE_pos.z();
+    t_stamp_ROV.transform.rotation.x = 1.0;
+    t_stamp_ROV.transform.rotation.y = 0.0;
+    t_stamp_ROV.transform.rotation.z = 0.0;
+    t_stamp_ROV.transform.rotation.w = 0.0;
     tf_broadcaster_ROV->sendTransform(t_stamp_ROV);
 
 }

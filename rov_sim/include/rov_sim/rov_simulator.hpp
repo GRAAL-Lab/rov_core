@@ -55,8 +55,15 @@ class VehicleSimulator : public rclcpp::Node {
     Eigen::Vector6d bodyF_relativeVelocity_, worldF_relativeVelocity_, worldF_velocity_, worldF_waterVelocity_;
     Eigen::Vector6d bodyF_relativeAcceleration_, worldF_relativeAcceleration_, bodyF_relativeAcceleration_projected_, bodyF_wavesEffects_;
 
-    ctb::LatLong vehiclePos, vehiclePreviousPos, centroidLocation;
+    ctb::LatLong vehiclePos_, vehiclePreviousPos_, centroidLocation_;
     double altitude_, Pre_altitude_;
+
+    // cable variable
+    ctb::LatLong cableStartPos_, cableEndPos_;
+    double cableLength_;
+    double cableStart_altitude_, cableEnd_altitude_;
+    Eigen::Vector3d bodyF_cable_ending_;
+
 
     Eigen::Matrix3d P_;
     Eigen::Matrix6d bodyF_projection_;
@@ -138,6 +145,7 @@ class VehicleSimulator : public rclcpp::Node {
 
     std::shared_ptr<SimulatorConfiguration> config_;
     Underwater_Vehicle rovModel_;
+
 
     bool LoadConfiguration(const std::string file_name);
     void SimulateActuation();

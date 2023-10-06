@@ -90,6 +90,7 @@ struct SimulatorConfiguration {
     int rate;
     double modelErrorPercentage;
     UnderwaterModelParameters ROVmodelParams;
+    CableParameters CableROVmodelParams; // cable for ROV
     Eigen::Vector3d inertialF_waterCurrent; // 3d for ROV
     Eigen::Vector3d bodyF_gps_sensor_position;
     Eigen::Vector6d bodyF_dvl_sensor_pose;
@@ -117,6 +118,11 @@ struct SimulatorConfiguration {
         // ROV model parameters
         if (!ROVmodelParams.LoadConfiguration(confObj)) {
             RCLCPP_ERROR(rclcpp::get_logger("SimulatorConfiguration"), "Failed to load ROV model params");
+            return false;
+        }
+        // ROV Cable model parameters
+        if (!CableROVmodelParams.LoadConfiguration(confObj)) {
+            RCLCPP_ERROR(rclcpp::get_logger("SimulatorConfiguration"), "Failed to load ROV Cable model params");
             return false;
         }
 
