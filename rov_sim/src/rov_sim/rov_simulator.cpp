@@ -136,9 +136,9 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
         0, sin(bodyF_orientation_.Roll()), cos(bodyF_orientation_.Roll());
 
     worldF_R_bodyF_ = Rz * Ry * Rx;
-    Eigen::RotationMatrix bodyF_R_worldF = worldF_R_bodyF_.transpose();
+    //Eigen::RotationMatrix bodyF_R_worldF = worldF_R_bodyF_.transpose();
 
-    rovModel_.InitializeMatrices(vel_initial, bodyF_R_worldF);
+    rovModel_.InitializeMatrices(vel_initial, worldF_R_bodyF_);
 
     bodyF_cable_ending_ = { -rovModel_.params.L / 2, 0.0, 0.0};
     //bodyF_cable_ending_ = { 1.0, 0.0, 0.0};
@@ -290,9 +290,9 @@ void VehicleSimulator::SimulateActuation()
     // Computing rov acceleration
     Eigen::Vector6d bodyF_cableForce;
     float cable_length = rovModel_.GetCableCurrentLength();
-    Eigen::RotationMatrix bodyF_R_worldF = worldF_R_bodyF_.transpose();
+    //Eigen::RotationMatrix bodyF_R_worldF = worldF_R_bodyF_.transpose();
 
-    bodyF_cableForce = rovModel_.ComputeFcable_bodyF(cableS_pos_worldF, cableE_pos_worldF, cable_length, bodyF_R_worldF);
+    bodyF_cableForce = rovModel_.ComputeFcable_bodyF(cableS_pos_worldF, cableE_pos_worldF, cable_length, worldF_R_bodyF_);
     //bodyF_cableForce.setZero();
     rovModel_.DirectDynamics(volt_cmd, bodyF_cableForce, worldF_R_bodyF_, bodyF_relativeVelocity_, bodyF_relativeAcceleration_);
 
@@ -640,7 +640,8 @@ void VehicleSimulator::SimulateSensors()
     Eigen::Vector3d vehicle_pos;
     ctb::LatLong2LocalUTM(vehiclePos_, altitude_, centroidLocation_, vehicle_pos);
     tf2::Quaternion q;
-    q.setEuler( bodyF_orientation_.Roll(), bodyF_orientation_.Pitch(), bodyF_orientation_.Yaw());
+    //q.setEuler( bodyF_orientation_.Yaw(), bodyF_orientation_.Pitch(), bodyF_orientation_.Roll());
+    q.setEuler( bodyF_orientation_.Pitch(), bodyF_orientation_.Roll(), bodyF_orientation_.Yaw());
 
     /*pt_.header.stamp = this->get_clock()->now();
     pt_.header.frame_id = "ROVframe";
@@ -674,6 +675,25 @@ void VehicleSimulator::SimulateSensors()
     t_stamp_temp.transform.rotation.y = 0.0;
     t_stamp_temp.transform.rotation.z = 0.0;
     t_stamp_temp.transform.rotation.w = 0.0;
+    tf_broadcaster_->sendTransform(t_stamp_temp);*/
+
+    /*tf2::Quaternion q1;
+    rml::EulerRPY ori;
+    ori.Roll(0.0);
+    ori.Pitch(0.5);
+    ori.Yaw(0.0);
+    q1.setEuler( ori.Pitch(), ori.Roll() , ori.Yaw());
+
+    t_stamp_temp.header.stamp = this->get_clock()->now();
+    t_stamp_temp.header.frame_id = "centroid";
+    t_stamp_temp.child_frame_id = "temp";
+    t_stamp_temp.transform.translation.x = 0.0;
+    t_stamp_temp.transform.translation.y = 1.0;
+    t_stamp_temp.transform.translation.z = 0.0;
+    t_stamp_temp.transform.rotation.x = q1.x();
+    t_stamp_temp.transform.rotation.y = q1.y();
+    t_stamp_temp.transform.rotation.z = q1.z();
+    t_stamp_temp.transform.rotation.w = q1.w();
     tf_broadcaster_->sendTransform(t_stamp_temp);*/
 
     t_stamp_ROV.header.stamp = this->get_clock()->now();
