@@ -57,12 +57,16 @@ class VehicleSimulator : public rclcpp::Node {
 
     ctb::LatLong vehiclePos_, vehiclePreviousPos_, centroidLocation_;
     double altitude_, Pre_altitude_;
+    Eigen::Vector3d ROVpose_,ROVprepose_;
 
     // cable variable
     ctb::LatLong cableStartPos_, cableEndPos_;
     double cableLength_;
     double cableStart_altitude_, cableEnd_altitude_;
     Eigen::Vector3d bodyF_cable_ending_;
+
+    Eigen::Vector3d cableStartPosXY_;
+    Eigen::Vector3d cableEndPosXY_;
 
 
     Eigen::Matrix3d P_;
