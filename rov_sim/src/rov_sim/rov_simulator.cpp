@@ -107,8 +107,8 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     ROVpose_ = ROVprepose_ = pos_initial;
 
     volt_cmd.setZero();
-    //volt_cmd[0] = -0.02;
-    //volt_cmd[1] = -0.02;
+    volt_cmd[0] = 0.05;
+    volt_cmd[1] = 0.05;
     //volt_cmd[2] = 0.02;
     //volt_cmd[3] = -0.02;
     //volt_cmd[4] = -0.02;
@@ -148,7 +148,7 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     worldF_cable_ending =  worldF_R_bodyF_ * bodyF_cable_ending_;
     worldF_cable_ending =  worldF_cable_ending + pos_initial;
     ctb::LocalUTM2LatLong(worldF_cable_ending, centroidLocation_, cableEndPos_, cableEnd_altitude_);
-    rovModel_.SetCableLength(2.0);
+    rovModel_.SetCableLength(4.0);
 
     Eigen::Vector3d worldF_cable_starting;
     ctb::LatLong cable_starting_, cable_ending_;
@@ -296,7 +296,7 @@ void VehicleSimulator::SimulateActuation()
     float cable_length = rovModel_.GetCableCurrentLength();
     //Eigen::RotationMatrix bodyF_R_worldF = worldF_R_bodyF_.transpose();
 
-    bodyF_cableForce = rovModel_.ComputeFcable_bodyF(cableS_pos_worldF, cableE_pos_worldF, cable_length, worldF_R_bodyF_);
+    bodyF_cableForce = rovModel_.ComputeFcable_bodyF(cableS_pos_worldF, cableE_pos_worldF, cable_length, worldF_R_bodyF_, bodyF_relativeVelocity_);
     //bodyF_cableForce.setZero();
     //bodyF_cableForce(0) = 10.0;
     //bodyF_cableForce << 10.0, 0.0, -0.0, -0.0, -0.0, -0.0;
