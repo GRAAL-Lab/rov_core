@@ -27,6 +27,7 @@
 
 #include "rov_msgs/msg/simulated_system.hpp"
 #include "rov_msgs/msg/micro_loop_count.hpp"
+#include "rov_msgs/msg/forces.hpp"
 
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
@@ -84,6 +85,7 @@ class VehicleSimulator : public rclcpp::Node {
 
     rov_msgs::msg::MicroLoopCount microLoopCountMsg_;
     rov_msgs::msg::SimulatedSystem groundTruthMsg_;
+    rov_msgs::msg::Forces forcesMsg_;
 
     geometry_msgs::msg::TransformStamped tt_;
     geometry_msgs::msg::PoseStamped pt_;
@@ -127,8 +129,9 @@ class VehicleSimulator : public rclcpp::Node {
     futils::Timer motorTimeout_;
     rclcpp::Publisher<rov_msgs::msg::SimulatedSystem>::SharedPtr simulatedSystemPub_;
     rclcpp::Publisher<rov_msgs::msg::MicroLoopCount>::SharedPtr microLoopCountPub_;
+    rclcpp::Publisher<rov_msgs::msg::Forces>::SharedPtr forcesPub_;
 
-    rclcpp::Publisher<geometry_msgs::msg::TransformStamped>::SharedPtr tfPub_;
+    //rclcpp::Publisher<geometry_msgs::msg::TransformStamped>::SharedPtr tfPub_;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr posePub_;
 
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
@@ -162,6 +165,8 @@ public:
     void ExecuteStep();
     void SimulateSensors();
     void PublishSensors();
+
+    void AssignMessage(std::array<double,6>& msg,const Eigen::Vector6d& vector);
 
     auto WorldF_Velocity() const -> const Eigen::Vector6d& { return worldF_velocity_; }
     /*auto Altitude() const -> const rml::EulerRPY& { return bodyF_orientation_; }

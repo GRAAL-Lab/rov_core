@@ -33,6 +33,7 @@ const std::string micro_loop_count = "/rov/llc/micro_loop_count";
 
 // SIM
 const std::string simulated_system = "/rov/simulated_system";
+const std::string forces = "/rov/forces";
 
 // NAV FILTER
 //const std::string nav_filter_data = "/ulisse/nav_filter/data";

@@ -62,7 +62,8 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     //fogPub_ = this->create_publisher<ulisse_msgs::msg::FOGData>(ulisse_msgs::topicnames::sensor_fog, 1);
     //appliedMotorRefPub_ = this->create_publisher<ulisse_msgs::msg::ThrustersReference>(ulisse_msgs::topicnames::llc_thrusters_applied_perc, 1);
     simulatedSystemPub_ = this->create_publisher<rov_msgs::msg::SimulatedSystem>(rov_msgs::topicnames::simulated_system, 1);
-    tfPub_ = this->create_publisher<geometry_msgs::msg::TransformStamped>(rov_msgs::topicnames::tf, 1);
+    forcesPub_ = this->create_publisher<rov_msgs::msg::Forces>(rov_msgs::topicnames::forces, 1);
+    //tfPub_ = this->create_publisher<geometry_msgs::msg::TransformStamped>(rov_msgs::topicnames::tf, 1);
     posePub_= this->create_publisher<geometry_msgs::msg::PoseStamped>(rov_msgs::topicnames::posROV, 1);
     //tf_static_broadcaster_ = this->create_publisher<tf2_ros::StaticTransformBroadcaster> (rov_msgs::topicnames::tf, 1);
     //tf_static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
@@ -647,18 +648,21 @@ void VehicleSimulator::SimulateSensors()
     groundTruthMsg_.gyro_bias[1] = by;
     groundTruthMsg_.gyro_bias[2] = bz;
 
+    forcesMsg_.stamp.sec = now_stamp_secs;
+    forcesMsg_.stamp.nanosec = now_stamp_nanosecs;
+    AssignMessage(forcesMsg_.bodyframe_coriolis_drag, rovModel_.getCoriolisAndDrag_bodyF());
+    AssignMessage(forcesMsg_.bodyframe_f_cable, rovModel_.getFcable_bodyF());
+    AssignMessage(forcesMsg_.bodyframe_f_thruster, rovModel_.getFthruster_bodyF());
+    AssignMessage(forcesMsg_.bodyframe_g, rovModel_.getg_bodyF());
+
     Eigen::Vector3d LaSpezia_centroid;
     ctb::LatLong2LocalUTM(centroidLocation_, 0.0, centroidLocation_, LaSpezia_centroid);
     Eigen::Vector3d vehicle_pos;
     ctb::LatLong2LocalUTM(vehiclePos_, altitude_, centroidLocation_, vehicle_pos);
     tf2::Quaternion q;
     Eigen::Quaterniond eq(worldF_R_bodyF_);
-    //tf2::
-    //tf2::quaternionEigenToTF(eq, q);
-    //transform.setRotation(q);
-    //q.setEuler( bodyF_orientation_.Yaw(), bodyF_orientation_.Pitch(), bodyF_orientation_.Roll());
+
     q.setEuler( bodyF_orientation_.Pitch(), bodyF_orientation_.Roll(), bodyF_orientation_.Yaw()); // i used it
-    //q.setEuler( bodyF_orientation_.Roll(), bodyF_orientation_.Pitch(), bodyF_orientation_.Yaw());
 
     pt_.header.stamp = this->get_clock()->now();
     pt_.header.frame_id = "ROVframe";
@@ -695,7 +699,7 @@ void VehicleSimulator::SimulateSensors()
     tf_broadcaster_->sendTransform(t_stamp_temp);*/
 
     tf2::Quaternion q1;
-    Eigen::Quaterniond eqq(worldF_R_bodyF_);
+    //Eigen::Quaterniond eqq(worldF_R_bodyF_);
     //tf2::
     //tf2::quaternionEigenToTF(eq, q);
     //transform.setRotation(q);
@@ -812,10 +816,18 @@ void VehicleSimulator::SimulateSensors()
 
 }
 
+void VehicleSimulator::AssignMessage(std::array<double,6>& msg,const Eigen::Vector6d& vector){
+    for(int i=0; i<msg.size(); i++){
+        msg[i] = vector(i);
+    }
+}
+
 void VehicleSimulator::PublishSensors()
 {
     microLoopCountPub_->publish(microLoopCountMsg_);
     simulatedSystemPub_->publish(groundTruthMsg_);
+    forcesPub_->publish(forcesMsg_);
+
     //tfPub_->publish(tt_);
     posePub_->publish(pt_);
 

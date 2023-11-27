@@ -35,6 +35,7 @@ rosidl_generate_interfaces(rov_msgs
   "msg/LatLongAlt.msg"
   "msg/SimulatedSystem.msg"
   "msg/MicroLoopCount.msg"
+  "msg/Forces.msg"
 
   # Commands
   #"msg/CommandHold.msg"
