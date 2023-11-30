@@ -166,7 +166,7 @@ public:
     void SimulateSensors();
     void PublishSensors();
 
-    void AssignMessage(std::array<double,6>& msg,const Eigen::Vector6d& vector);
+    void AssignMessage(std::array<double,6>& msg, const Eigen::Vector6d& vector);
 
     auto WorldF_Velocity() const -> const Eigen::Vector6d& { return worldF_velocity_; }
     /*auto Altitude() const -> const rml::EulerRPY& { return bodyF_orientation_; }

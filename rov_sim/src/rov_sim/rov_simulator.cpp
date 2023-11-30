@@ -107,9 +107,9 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
 
     ROVpose_ = ROVprepose_ = pos_initial;
 
-    volt_cmd.setZero();
-    volt_cmd[0] = 0.05;
-    volt_cmd[1] = 0.05;
+    volt_cmd.setZero(); // volt should be between 0 to 1
+    //volt_cmd[0] = 0.05;
+    //volt_cmd[1] = 0.05;
     //volt_cmd[2] = 0.02;
     //volt_cmd[3] = -0.02;
     //volt_cmd[4] = -0.02;
@@ -302,7 +302,7 @@ void VehicleSimulator::SimulateActuation()
     //bodyF_cableForce(0) = 10.0;
     //bodyF_cableForce << 10.0, 0.0, -0.0, -0.0, -0.0, -0.0;
     rovModel_.DirectDynamics(volt_cmd, bodyF_cableForce, worldF_R_bodyF_, bodyF_relativeVelocity_, bodyF_relativeAcceleration_);
-
+    rovModel_.Hold(volt_cmd);
     //Compute the worldF_R_bodyF
     Eigen::RotationMatrix Rz, Ry, Rx;
     Rz << cos(bodyF_orientation_.Yaw()), -sin(bodyF_orientation_.Yaw()), 0,
