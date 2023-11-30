@@ -303,6 +303,7 @@ void VehicleSimulator::SimulateActuation()
     //bodyF_cableForce << 10.0, 0.0, -0.0, -0.0, -0.0, -0.0;
     rovModel_.DirectDynamics(volt_cmd, bodyF_cableForce, worldF_R_bodyF_, bodyF_relativeVelocity_, bodyF_relativeAcceleration_);
     rovModel_.Hold(volt_cmd);
+    rovModel_.ThrustersSaturation(volt_cmd, 1.0);
     //Compute the worldF_R_bodyF
     Eigen::RotationMatrix Rz, Ry, Rx;
     Rz << cos(bodyF_orientation_.Yaw()), -sin(bodyF_orientation_.Yaw()), 0,
