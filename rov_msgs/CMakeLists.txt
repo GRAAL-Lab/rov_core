@@ -49,7 +49,7 @@ rosidl_generate_interfaces(rov_msgs
   
 
   ## Services ##
-  #"srv/ControlCommand.srv"
+  "srv/UserInput.srv"
 
   
   ## Other ##

@@ -188,6 +188,21 @@ struct SimulatorConfiguration {
     }
 };
 
+namespace inputs {
+
+namespace ID {
+
+const uint8_t halt = 0;
+const uint8_t hold = 5;
+const uint8_t forward = 8;
+const uint8_t backward = 2;
+const uint8_t left = 6;
+const uint8_t right = 4;
+const uint8_t up = 9;
+const uint8_t down = 3;
+}
+}
+
 }
 
 #endif // SIMULATOR_DEFINES_H

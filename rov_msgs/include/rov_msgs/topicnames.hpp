@@ -78,6 +78,7 @@ const std::string forces = "/rov/forces";
 //const std::string navfilter_cmd_service = "/ulisse/service/navfilter_cmd";
 //const std::string set_boundaries_service = "/ulisse/ctrl/set_boundaries";
 //const std::string get_boundaries_service = "/ulisse/ctrl/get_boundaries";
+const std::string user_input_service = "/rov/service/user_input";
 
 // OTHER
 //const std::string obstacle = "/ulisse/ctrl/obstacle";

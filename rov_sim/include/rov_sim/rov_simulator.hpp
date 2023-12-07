@@ -31,7 +31,7 @@
 
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
-#include "rclcpp/rclcpp.hpp"
+
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_ros/static_transform_broadcaster.h"
 #include "tf2_ros/transform_broadcaster.h"
@@ -39,6 +39,8 @@
 #include "GeographicLib/Geodesic.hpp"
 #include "eigen3/Eigen/Dense"
 #include "rml/RML.h"
+
+#include "rov_msgs/srv/user_input.hpp"
 
 namespace rov {
 
@@ -94,6 +96,8 @@ class VehicleSimulator : public rclcpp::Node {
     geometry_msgs::msg::TransformStamped t_stamp_temp;
     geometry_msgs::msg::TransformStamped t_stamp_ROV;
 
+    // service
+    rclcpp::Service<rov_msgs::srv::UserInput>::SharedPtr srvUserInput_;
 
     //rov_msgs::msg::MicroLoopCount microLoopCountMsg_;
     /*
@@ -153,6 +157,8 @@ class VehicleSimulator : public rclcpp::Node {
     std::shared_ptr<SimulatorConfiguration> config_;
     Underwater_Vehicle rovModel_;
 
+    char option; // motion of ROV
+
 
     bool LoadConfiguration(const std::string file_name);
     void SimulateActuation();
@@ -172,6 +178,10 @@ public:
     /*auto Altitude() const -> const rml::EulerRPY& { return bodyF_orientation_; }
     auto Latitude() const -> double { return latitude_; }
     auto Longitude() const -> double { return longitude_; }*/
+
+    void CommandsHandler(const std::shared_ptr<rmw_request_id_t> request_header,
+                         const std::shared_ptr<rov_msgs::srv::UserInput::Request> request,
+                         std::shared_ptr<rov_msgs::srv::UserInput::Response> response);
 
     /**
      * @brief Set if simulation should run in Realtime or not

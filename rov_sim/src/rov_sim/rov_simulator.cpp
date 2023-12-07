@@ -7,9 +7,16 @@
 #include "rov_msgs/topicnames.hpp"
 
 #include "rov_sim/rov_simulator.hpp"
+#include "rov_sim/simulator_defines.hpp"
 
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_ros/static_transform_broadcaster.h"
+
+#include "rov_msgs/topicnames.hpp"
+
+using std::placeholders::_1;
+using std::placeholders::_2;
+using std::placeholders::_3;
 
 namespace rov {
 using namespace std::chrono_literals;
@@ -70,6 +77,9 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     //tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
     tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
     tf_broadcaster_ROV = std::make_shared<tf2_ros::TransformBroadcaster>(this);
+
+    srvUserInput_ = this->create_service<rov_msgs::srv::UserInput>(rov_msgs::topicnames::user_input_service,
+                                                                   std::bind(&VehicleSimulator::CommandsHandler, this, _1, _2, _3));
 
     //motorsDataPub_ = this->create_publisher<ulisse_msgs::msg::LLCThrusters>(ulisse_msgs::topicnames::llc_thrusters, 1);
 
@@ -155,6 +165,9 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     ctb::LatLong cable_starting_, cable_ending_;
     worldF_cable_starting = {-1.0, 0, 0};
     ctb::LocalUTM2LatLong(worldF_cable_starting, centroidLocation_, cableStartPos_, cableStart_altitude_);
+
+    std::cout << "Please Enter a command for ROV motion: " << std::endl;
+    option = '0';
     //
     //getchar();
 }
@@ -302,7 +315,49 @@ void VehicleSimulator::SimulateActuation()
     //bodyF_cableForce(0) = 10.0;
     //bodyF_cableForce << 10.0, 0.0, -0.0, -0.0, -0.0, -0.0;
     rovModel_.DirectDynamics(volt_cmd, bodyF_cableForce, worldF_R_bodyF_, bodyF_relativeVelocity_, bodyF_relativeAcceleration_);
-    rovModel_.Hold(volt_cmd);
+    /*
+    char c[1];
+    if(std::cin.rdbuf()->in_avail() ){
+        std::cin.read (c,1);
+        option = c[0];
+        std::cout << "Please Enter a command for ROV motion: " << std::endl;
+    }
+
+    switch (option){
+    case 'u': {
+        rovModel_.moveUp(volt_cmd);
+        break;
+    }
+    case 'd': {
+        rovModel_.moveDown(volt_cmd);
+        break;
+    }
+    case 'l': {
+        rovModel_.moveLeft(volt_cmd);
+        break;
+    }
+    case 'r': {
+        rovModel_.moveRight(volt_cmd);
+        break;
+    }
+    case 'f': {
+        rovModel_.moveForward(volt_cmd);
+        break;
+    }
+    case 'b': {
+        rovModel_.moveBackward(volt_cmd);
+        break;
+    }
+    case 'h': {
+        rovModel_.Hold(volt_cmd);
+        break;
+    }
+    default: {
+        rovModel_.Halt(volt_cmd);
+        break;}
+    }
+*/
+    rovModel_.moveForward(volt_cmd);
     rovModel_.ThrustersSaturation(volt_cmd, 1.0);
     //Compute the worldF_R_bodyF
     Eigen::RotationMatrix Rz, Ry, Rx;
@@ -415,6 +470,7 @@ void VehicleSimulator::SimulateActuation()
     ROVpose_(2) = ROVprepose_(2) + worldF_velocity_(2) * Ts_;
 
     if (altitude_ < 0) altitude_ = 0;
+    ROVpose_(2) = altitude_;
     //std::cout << "Ts_ = " << Ts_ << std::endl;
 
     // Integrating the Euler rates to get the new Euler angles and wrapping around 2 PI
@@ -818,7 +874,7 @@ void VehicleSimulator::SimulateSensors()
 }
 
 void VehicleSimulator::AssignMessage(std::array<double,6>& msg,const Eigen::Vector6d& vector){
-    for(int i=0; i<msg.size(); i++){
+    for(int i=0; i < msg.size(); i++){
         msg[i] = vector(i);
     }
 }
@@ -872,6 +928,67 @@ double VehicleSimulator::GetCurrentTimeStamp() const
 {
     long now_nanosecs = (std::chrono::duration_cast<std::chrono::nanoseconds>(t_now_.time_since_epoch())).count();
     return static_cast<double>(now_nanosecs / 1E9);
+}
+
+void VehicleSimulator::CommandsHandler(const std::shared_ptr<rmw_request_id_t> request_header,
+                                    const std::shared_ptr<rov_msgs::srv::UserInput::Request> request,
+                                    std::shared_ptr<rov_msgs::srv::UserInput::Response> response)
+{
+    // Create a callback function for when service requests are received.
+
+    (void)request_header;
+    RCLCPP_INFO(this->get_logger(), "Incoming request: %s", request->motion_type);
+
+    std::stringstream logg;
+    logg << "Incoming request: " << request->motion_type;
+
+    std::stringstream log;
+    if (request->motion_type == rov::inputs::ID::halt) {
+        std::cout << "Received Command Halt" << std::endl;
+
+
+    }
+    else if (request->motion_type == rov::inputs::ID::hold) {
+        std::cout << "Received Command Hold" << std::endl;
+
+
+    }
+    else if (request->motion_type == rov::inputs::ID::forward) {
+        std::cout << "Received Command Forward" << std::endl;
+
+
+    }
+    else if (request->motion_type == rov::inputs::ID::backward) {
+        std::cout << "Received Command Backward" << std::endl;
+
+
+    }
+    else if (request->motion_type == rov::inputs::ID::right) {
+        std::cout << "Received Command Right" << std::endl;
+
+
+    }
+    else if (request->motion_type == rov::inputs::ID::left) {
+        std::cout << "Received Command Left" << std::endl;
+
+
+    }
+    else if (request->motion_type == rov::inputs::ID::up) {
+        std::cout << "Received Command Up" << std::endl;
+
+
+    }
+    else if (request->motion_type == rov::inputs::ID::down) {
+        std::cout << "Received Command Down" << std::endl;
+
+
+    }
+    else{
+        std::cout << "Received Command Halt" << std::endl;
+    }
+    option = request->motion_type;
+
+    RCLCPP_INFO(this->get_logger(), "Service Response: %s", response->res.c_str());
 }
 
 /* void VehicleSimulator::ThrustersReferenceCB(const rov_msgs::msg::ThrustersReference::SharedPtr msg)
