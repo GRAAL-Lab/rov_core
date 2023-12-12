@@ -157,7 +157,7 @@ class VehicleSimulator : public rclcpp::Node {
     std::shared_ptr<SimulatorConfiguration> config_;
     Underwater_Vehicle rovModel_;
 
-    char option; // motion of ROV
+    int option; // motion of ROV
 
 
     bool LoadConfiguration(const std::string file_name);

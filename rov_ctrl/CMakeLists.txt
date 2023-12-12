@@ -79,17 +79,21 @@ add_library(rov_kinematic_ctrl_lib ${rov_kinematic_ctrl_lib_sources})
 ament_target_dependencies(rov_kinematic_ctrl_lib rclcpp std_msgs ulisse_msgs surface_vehicle_model ament_index_cpp)
 target_link_libraries(rov_kinematic_ctrl_lib ${surface_vehicle_model_LIBRARIES} ${ulisse_msgs_LIBRARIES} ${underwater_vehicle_model_LIBRARIES} ${rov_msgs_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} ikcl tpik config++ Geographic rml fsm ctrl_toolbox sisl_toolbox)
 
-#add_executable(kinematic_control_node src/kinematic_control_node.cpp)
-#ament_target_dependencies(kinematic_control_node rclcpp std_msgs ulisse_msgs rml)
-#target_link_libraries(kinematic_control_node rml ulisse_kinematic_ctrl_lib ${JSONCPP_LIBRARIES})
+add_executable(kinematic_control_node src/kinematic_control_node.cpp)
+ament_target_dependencies(kinematic_control_node rclcpp std_msgs rov_msgs rml)
+target_link_libraries(kinematic_control_node rml rov_kinematic_ctrl_lib ${JSONCPP_LIBRARIES})
+
+add_executable(controller_console_node src/controller_console_node.cpp)
+ament_target_dependencies(controller_console_node rclcpp std_msgs rov_msgs rml)
+target_link_libraries(controller_console_node rml rov_kinematic_ctrl_lib)
 
 ament_export_include_directories(include)
 
 ## Install
 install(TARGETS
-  #kinematic_control_node
+  kinematic_control_node
   #dynamic_control_node
-  #controller_console_node
+  controller_console_node
   #monitor_node
   #control_test
   DESTINATION lib/${PROJECT_NAME}

@@ -78,8 +78,9 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
     tf_broadcaster_ROV = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
-    srvUserInput_ = this->create_service<rov_msgs::srv::UserInput>(rov_msgs::topicnames::user_input_service,
-                                                                   std::bind(&VehicleSimulator::CommandsHandler, this, _1, _2, _3));
+    //srvUserInput_ = this->create_service<rov_msgs::srv::UserInput>(rov_msgs::topicnames::user_input_service,
+    //                                                               std::bind(&VehicleSimulator::CommandsHandler, this, 1));
+    srvUserInput_ = this->create_service<rov_msgs::srv::UserInput>(rov_msgs::topicnames::user_input_service, std::bind(&VehicleSimulator::CommandsHandler, this, _1, _2, _3));
 
     //motorsDataPub_ = this->create_publisher<ulisse_msgs::msg::LLCThrusters>(ulisse_msgs::topicnames::llc_thrusters, 1);
 
@@ -166,8 +167,9 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     worldF_cable_starting = {-1.0, 0, 0};
     ctb::LocalUTM2LatLong(worldF_cable_starting, centroidLocation_, cableStartPos_, cableStart_altitude_);
 
-    std::cout << "Please Enter a command for ROV motion: " << std::endl;
-    option = '0';
+    //std::cout << "Please Enter a command for ROV motion: " << std::endl;
+    std::cout << "Motion type : hold" << std::endl;
+    option = rov::inputs::ID::hold;
     //
     //getchar();
 }
@@ -315,49 +317,56 @@ void VehicleSimulator::SimulateActuation()
     //bodyF_cableForce(0) = 10.0;
     //bodyF_cableForce << 10.0, 0.0, -0.0, -0.0, -0.0, -0.0;
     rovModel_.DirectDynamics(volt_cmd, bodyF_cableForce, worldF_R_bodyF_, bodyF_relativeVelocity_, bodyF_relativeAcceleration_);
-    /*
-    char c[1];
-    if(std::cin.rdbuf()->in_avail() ){
-        std::cin.read (c,1);
-        option = c[0];
-        std::cout << "Please Enter a command for ROV motion: " << std::endl;
-    }
 
     switch (option){
-    case 'u': {
-        rovModel_.moveUp(volt_cmd);
-        break;
+        case rov::inputs::ID::halt: {
+            rovModel_.Halt(volt_cmd);
+            //std::cout << "Motion type : Halt" << std::endl;
+            break;
+        }
+        case rov::inputs::ID::up: {
+            rovModel_.moveUp(volt_cmd);
+            //std::cout << "Motion type : move Up" << std::endl;
+            break;
+        }
+        case rov::inputs::ID::down: {
+            rovModel_.moveDown(volt_cmd);
+            //std::cout << "Motion type : move Down" << std::endl;
+            break;
+        }
+        case rov::inputs::ID::left: {
+            rovModel_.moveLeft(volt_cmd);
+            //std::cout << "Motion type : turn Left" << std::endl;
+            break;
+        }
+        case rov::inputs::ID::right: {
+            rovModel_.moveRight(volt_cmd);
+            //std::cout << "Motion type : turn Right" << std::endl;
+            break;
+        }
+        case rov::inputs::ID::forward: {
+            rovModel_.moveForward(volt_cmd);
+            //std::cout << "Motion type : move Forward" << std::endl;
+            break;
+        }
+        case rov::inputs::ID::backward: {
+            rovModel_.moveBackward(volt_cmd);
+            //std::cout << "Motion type : move Backward" << std::endl;
+            break;
+        }
+        case rov::inputs::ID::hold: {
+            rovModel_.Hold(volt_cmd);
+            //std::cout << "Motion type : Hold" << std::endl;
+            break;
+        }
+        default: {
+            rovModel_.Halt(volt_cmd);
+            //std::cout << "Motion type : Halt" << std::endl;
+            break;
+        }
     }
-    case 'd': {
-        rovModel_.moveDown(volt_cmd);
-        break;
-    }
-    case 'l': {
-        rovModel_.moveLeft(volt_cmd);
-        break;
-    }
-    case 'r': {
-        rovModel_.moveRight(volt_cmd);
-        break;
-    }
-    case 'f': {
-        rovModel_.moveForward(volt_cmd);
-        break;
-    }
-    case 'b': {
-        rovModel_.moveBackward(volt_cmd);
-        break;
-    }
-    case 'h': {
-        rovModel_.Hold(volt_cmd);
-        break;
-    }
-    default: {
-        rovModel_.Halt(volt_cmd);
-        break;}
-    }
-*/
-    rovModel_.moveForward(volt_cmd);
+
+    //rovModel_.Hold(volt_cmd);
     rovModel_.ThrustersSaturation(volt_cmd, 1.0);
     //Compute the worldF_R_bodyF
     Eigen::RotationMatrix Rz, Ry, Rx;
@@ -931,64 +940,49 @@ double VehicleSimulator::GetCurrentTimeStamp() const
 }
 
 void VehicleSimulator::CommandsHandler(const std::shared_ptr<rmw_request_id_t> request_header,
-                                    const std::shared_ptr<rov_msgs::srv::UserInput::Request> request,
+                                       const std::shared_ptr<rov_msgs::srv::UserInput::Request> request,
                                     std::shared_ptr<rov_msgs::srv::UserInput::Response> response)
 {
     // Create a callback function for when service requests are received.
 
     (void)request_header;
-    RCLCPP_INFO(this->get_logger(), "Incoming request: %s", request->motion_type);
+    //RCLCPP_INFO(this->get_logger(), "Incoming request: %d", request->motion_type);
 
-    std::stringstream logg;
-    logg << "Incoming request: " << request->motion_type;
+    //std::stringstream logg;
+    //logg << "Incoming request: " << request->motion_type;
 
-    std::stringstream log;
+    //std::stringstream log;
     if (request->motion_type == rov::inputs::ID::halt) {
         std::cout << "Received Command Halt" << std::endl;
-
-
     }
     else if (request->motion_type == rov::inputs::ID::hold) {
         std::cout << "Received Command Hold" << std::endl;
-
-
     }
     else if (request->motion_type == rov::inputs::ID::forward) {
         std::cout << "Received Command Forward" << std::endl;
-
-
     }
     else if (request->motion_type == rov::inputs::ID::backward) {
         std::cout << "Received Command Backward" << std::endl;
-
-
     }
     else if (request->motion_type == rov::inputs::ID::right) {
         std::cout << "Received Command Right" << std::endl;
-
-
     }
     else if (request->motion_type == rov::inputs::ID::left) {
         std::cout << "Received Command Left" << std::endl;
-
-
     }
     else if (request->motion_type == rov::inputs::ID::up) {
         std::cout << "Received Command Up" << std::endl;
-
-
     }
     else if (request->motion_type == rov::inputs::ID::down) {
         std::cout << "Received Command Down" << std::endl;
-
-
     }
     else{
         std::cout << "Received Command Halt" << std::endl;
     }
     option = request->motion_type;
 
-    RCLCPP_INFO(this->get_logger(), "Service Response: %s", response->res.c_str());
+    response->res = "good";
+    //RCLCPP_INFO(this->get_logger(), "Service Response: %s", response->res.c_str());
 }
 
 /* void VehicleSimulator::ThrustersReferenceCB(const rov_msgs::msg::ThrustersReference::SharedPtr msg)
