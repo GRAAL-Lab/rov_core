@@ -36,6 +36,9 @@ rosidl_generate_interfaces(rov_msgs
   "msg/SimulatedSystem.msg"
   "msg/MicroLoopCount.msg"
   "msg/Forces.msg"
+  "msg/ReferenceVelocities.msg"
+  "msg/ThrustersReference.msg"
+  "msg/DynamicPidControl.msg"
 
   # Commands
   #"msg/CommandHold.msg"

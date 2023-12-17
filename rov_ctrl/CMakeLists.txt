@@ -73,11 +73,20 @@ set(rov_kinematic_ctrl_lib_sources
 
 )
 
+set(rov_dynamic_ctrl_lib_sources
+    # Main Class
+    src/rov_ctrl/dynamic_rov_controller.cpp
+)
 
 ## Libraries
 add_library(rov_kinematic_ctrl_lib ${rov_kinematic_ctrl_lib_sources})
 ament_target_dependencies(rov_kinematic_ctrl_lib rclcpp std_msgs ulisse_msgs surface_vehicle_model ament_index_cpp)
 target_link_libraries(rov_kinematic_ctrl_lib ${surface_vehicle_model_LIBRARIES} ${ulisse_msgs_LIBRARIES} ${underwater_vehicle_model_LIBRARIES} ${rov_msgs_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} ikcl tpik config++ Geographic rml fsm ctrl_toolbox sisl_toolbox)
+
+add_library(rov_dynamic_ctrl_lib ${rov_dynamic_ctrl_lib_sources})
+ament_target_dependencies(rov_dynamic_ctrl_lib rclcpp std_msgs rov_msgs underwater_vehicle_model ament_index_cpp)
+target_link_libraries(rov_dynamic_ctrl_lib ${underwater_vehicle_model_LIBRARIES} ${rov_msgs_LIBRARIES} config++ Geographic rml fsm ctrl_toolbox)
+
 
 add_executable(kinematic_control_node src/kinematic_control_node.cpp)
 ament_target_dependencies(kinematic_control_node rclcpp std_msgs rov_msgs rml)
@@ -86,6 +95,10 @@ target_link_libraries(kinematic_control_node rml rov_kinematic_ctrl_lib ${JSONCP
 add_executable(controller_console_node src/controller_console_node.cpp)
 ament_target_dependencies(controller_console_node rclcpp std_msgs rov_msgs rml)
 target_link_libraries(controller_console_node rml rov_kinematic_ctrl_lib)
+
+#add_executable(dynamic_control_node src/dynamic_control_node.cpp)
+#ament_target_dependencies(dynamic_control_node rclcpp std_msgs ulisse_msgs rml ament_index_cpp ctrl_toolbox)
+#target_link_libraries(dynamic_control_node rml ulisse_dynamic_ctrl_lib)
 
 ament_export_include_directories(include)
 

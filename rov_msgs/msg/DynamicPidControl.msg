@@ -1,0 +1,16 @@
+Time stamp # (Two-integer timestamp that is expressed as seconds and nanoseconds)
+float64 desired_surge
+float64 feedback_surge
+float64 out_pid_surge
+float64 desired_sway
+float64 feedback_sway
+float64 out_pid_sway
+float64 desired_heave
+float64 feedback_heave
+float64 out_pid_heave
+float64 desired_yaw_rate
+float64 feedback_yaw_rate
+float64 out_pid_yaw_rate
+float64[3] tau
+float64[3] forces
+ThrustersReference motor_percentage

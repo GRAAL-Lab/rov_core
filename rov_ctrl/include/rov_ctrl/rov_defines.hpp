@@ -52,7 +52,7 @@ const uint8_t up = 9;
 const uint8_t down = 3;
 }
 }
-/*
+
 namespace states {
 
 namespace ID {
@@ -65,7 +65,7 @@ const std::string surgeyawrate = "Surge_YawRate";
 const std::string pathfollow = "Path_Following";
 }
 }
-*/
+
 
 /*
 namespace events {
