@@ -28,6 +28,7 @@
 #include "rov_msgs/msg/simulated_system.hpp"
 #include "rov_msgs/msg/micro_loop_count.hpp"
 #include "rov_msgs/msg/forces.hpp"
+#include "rov_msgs/msg/thrusters_reference.hpp"
 
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
@@ -97,7 +98,7 @@ class VehicleSimulator : public rclcpp::Node {
     geometry_msgs::msg::TransformStamped t_stamp_ROV;
 
     // service
-    rclcpp::Service<rov_msgs::srv::UserInput>::SharedPtr srvUserInput_;
+    //rclcpp::Service<rov_msgs::srv::UserInput>::SharedPtr srvUserInput_;
 
     //rov_msgs::msg::MicroLoopCount microLoopCountMsg_;
     /*
@@ -134,6 +135,8 @@ class VehicleSimulator : public rclcpp::Node {
     rclcpp::Publisher<rov_msgs::msg::SimulatedSystem>::SharedPtr simulatedSystemPub_;
     rclcpp::Publisher<rov_msgs::msg::MicroLoopCount>::SharedPtr microLoopCountPub_;
     rclcpp::Publisher<rov_msgs::msg::Forces>::SharedPtr forcesPub_;
+
+    rclcpp::Subscription<rov_msgs::msg::ThrustersReference>::SharedPtr thrustersSub_;
 
     //rclcpp::Publisher<geometry_msgs::msg::TransformStamped>::SharedPtr tfPub_;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr posePub_;
@@ -179,9 +182,9 @@ public:
     auto Latitude() const -> double { return latitude_; }
     auto Longitude() const -> double { return longitude_; }*/
 
-    void CommandsHandler(const std::shared_ptr<rmw_request_id_t> request_header,
+    /*void CommandsHandler(const std::shared_ptr<rmw_request_id_t> request_header,
                          const std::shared_ptr<rov_msgs::srv::UserInput::Request> request,
-                         std::shared_ptr<rov_msgs::srv::UserInput::Response> response);
+                         std::shared_ptr<rov_msgs::srv::UserInput::Response> response);*/
 
     /**
      * @brief Set if simulation should run in Realtime or not
@@ -196,7 +199,7 @@ public:
     void SetRealtime(bool realtime);
     double GetCurrentTimeStamp() const;
 
-    //void ThrustersReferenceCB(const ulisse_msgs::msg::ThrustersReference::SharedPtr msg);
+    void ThrustersReferenceCB(const rov_msgs::msg::ThrustersReference::SharedPtr msg);
 };
 }
 

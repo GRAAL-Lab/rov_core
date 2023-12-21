@@ -1,8 +1,6 @@
 /*
  * controller_console_node.cpp
  *
- *  Created on: Nov 01, 2018
- *      Author: francescow
  */
 
 #include <cstdio>

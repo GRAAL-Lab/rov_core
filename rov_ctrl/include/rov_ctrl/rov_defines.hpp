@@ -57,12 +57,18 @@ namespace states {
 
 namespace ID {
 
-const std::string latlong = "Move_To";
+//const std::string latlong = "Move_To";
 const std::string halt = "Halt";
 const std::string hold = "Hold";
-const std::string surgeheading = "Surge_Heading";
+const std::string forward = "Forward";
+const std::string backward = "Backward";
+const std::string left = "Left";
+const std::string right = "Right";
+const std::string up = "Up";
+const std::string down = "Down";
+//const std::string surgeheading = "Surge_Heading";
 const std::string surgeyawrate = "Surge_YawRate";
-const std::string pathfollow = "Path_Following";
+//const std::string pathfollow = "Path_Following";
 }
 }
 

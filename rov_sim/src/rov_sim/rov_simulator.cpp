@@ -80,12 +80,12 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
 
     //srvUserInput_ = this->create_service<rov_msgs::srv::UserInput>(rov_msgs::topicnames::user_input_service,
     //                                                               std::bind(&VehicleSimulator::CommandsHandler, this, 1));
-    srvUserInput_ = this->create_service<rov_msgs::srv::UserInput>(rov_msgs::topicnames::user_input_service, std::bind(&VehicleSimulator::CommandsHandler, this, _1, _2, _3));
+    //srvUserInput_ = this->create_service<rov_msgs::srv::UserInput>(rov_msgs::topicnames::user_input_service, std::bind(&VehicleSimulator::CommandsHandler, this, _1, _2, _3));
 
     //motorsDataPub_ = this->create_publisher<ulisse_msgs::msg::LLCThrusters>(ulisse_msgs::topicnames::llc_thrusters, 1);
 
-    //thrustersSub_ = this->create_subscription<ulisse_msgs::msg::ThrustersReference>(ulisse_msgs::topicnames::llc_thrusters_reference_perc, 1,
-    //    std::bind(&VehicleSimulator::ThrustersReferenceCB, this, _1));
+    thrustersSub_ = this->create_subscription<rov_msgs::msg::ThrustersReference>(rov_msgs::topicnames::llc_thrusters_reference_perc, 1,
+        std::bind(&VehicleSimulator::ThrustersReferenceCB, this, _1));
 
     worldF_waterVelocity_(0) = 0.0;
     worldF_waterVelocity_(1) = 0.0;
@@ -312,12 +312,15 @@ void VehicleSimulator::SimulateActuation()
     float cable_length = rovModel_.GetCableCurrentLength();
     //Eigen::RotationMatrix bodyF_R_worldF = worldF_R_bodyF_.transpose();
 
-    bodyF_cableForce = rovModel_.ComputeFcable_bodyF(cableS_pos_worldF, cableE_pos_worldF, cable_length, worldF_R_bodyF_, bodyF_relativeVelocity_);
+    bodyF_cableForce = rovModel_.ComputeFcable_bodyF(cableS_pos_worldF, cableE_pos_worldF, cable_length, worldF_R_bodyF_);
     //bodyF_cableForce.setZero();
     //bodyF_cableForce(0) = 10.0;
     //bodyF_cableForce << 10.0, 0.0, -0.0, -0.0, -0.0, -0.0;
+    //rovModel_.Hold(volt_cmd);
+    //std::cout << "volt_cmd = "<< volt_cmd << std::endl;
     rovModel_.DirectDynamics(volt_cmd, bodyF_cableForce, worldF_R_bodyF_, bodyF_relativeVelocity_, bodyF_relativeAcceleration_);
 
+/*
     switch (option){
         case rov::inputs::ID::halt: {
             rovModel_.Halt(volt_cmd);
@@ -365,8 +368,7 @@ void VehicleSimulator::SimulateActuation()
             break;
         }
     }
-
-    //rovModel_.Hold(volt_cmd);
+*/
     rovModel_.ThrustersSaturation(volt_cmd, 1.0);
     //Compute the worldF_R_bodyF
     Eigen::RotationMatrix Rz, Ry, Rx;
@@ -939,7 +941,7 @@ double VehicleSimulator::GetCurrentTimeStamp() const
     return static_cast<double>(now_nanosecs / 1E9);
 }
 
-void VehicleSimulator::CommandsHandler(const std::shared_ptr<rmw_request_id_t> request_header,
+/*void VehicleSimulator::CommandsHandler(const std::shared_ptr<rmw_request_id_t> request_header,
                                        const std::shared_ptr<rov_msgs::srv::UserInput::Request> request,
                                     std::shared_ptr<rov_msgs::srv::UserInput::Response> response)
 {
@@ -984,13 +986,19 @@ void VehicleSimulator::CommandsHandler(const std::shared_ptr<rmw_request_id_t> r
     response->res = "good";
     //RCLCPP_INFO(this->get_logger(), "Service Response: %s", response->res.c_str());
 }
-
-/* void VehicleSimulator::ThrustersReferenceCB(const rov_msgs::msg::ThrustersReference::SharedPtr msg)
-{
-    hp_ = msg->left_percentage;
-    hs_ = msg->right_percentage;
-
-    motorTimeout_.Start();
-}
 */
+
+void VehicleSimulator::ThrustersReferenceCB(const rov_msgs::msg::ThrustersReference::SharedPtr msg)
+{
+
+    volt_cmd[0] = msg->first_percentage;
+    volt_cmd[1] = msg->second_percentage;
+    volt_cmd[2] = msg->third_percentage;
+    volt_cmd[3] = msg->forth_percentage;
+    volt_cmd[4] = msg->fifth_percentage;
+    volt_cmd[5] = msg->sixth_percentage;
+
+    //motorTimeout_.Start();
+}
+
 }

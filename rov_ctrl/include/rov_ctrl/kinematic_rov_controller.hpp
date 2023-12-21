@@ -5,7 +5,10 @@
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "rov_msgs/srv/user_input.hpp"
-
+#include "rov_msgs/msg/reference_velocities.hpp"
+#include "rov_msgs/msg/vehicle_status.hpp"
+#include <string>
+#include "rov_ctrl/ctrl_data_structs.hpp"
 
 namespace rov {
 
@@ -18,12 +21,18 @@ class ROVController : public rclcpp::Node {
     double timestamp_;
     bool boundariesSet_;
 
+    std::string fileName_;
     std::chrono::system_clock::time_point tNow_;
 
     std::string boundariesJson_;
 
     // service
-    rclcpp::Client<rov_msgs::srv::UserInput>::SharedPtr cliUserInput_;
+    //rclcpp::Client<rov_msgs::srv::UserInput>::SharedPtr cliUserInput_;
+    rclcpp::Service<rov_msgs::srv::UserInput>::SharedPtr srvUserInput_;
+
+    rclcpp::Publisher<rov_msgs::msg::ReferenceVelocities>::SharedPtr  referenceVelocitiesPub_;
+    rclcpp::Publisher<rov_msgs::msg::VehicleStatus>::SharedPtr vehicleStatusPub_;
+
     //rclcpp::Client<rov_msgs::srv::UserInput>::SharedPtr client = node->create_client<rov_msgs::srv::UserInput>("user_input");
 
     //ctb::LatLong centroidLocation_;
@@ -32,11 +41,23 @@ class ROVController : public rclcpp::Node {
     //std::shared_ptr<ctb::LatLong> vehiclePosition_;
     //std::shared_ptr<Eigen::Vector2d> inertialF_waterCurrent_;
 
+    rclcpp::TimerBase::SharedPtr runTimer_;
+    std::shared_ptr<KCLConfiguration> conf_;
+    ctb::LatLong centroidLocation_;
+
+    int option; // motion of ROV
+    std::string current_state;
+
+    bool LoadConfiguration(std::shared_ptr<KCLConfiguration>& conf);
 
 public:
     ROVController(std::string conf_filename);
     virtual ~ROVController();
     void Run();
+    void PublishControl();
+    void CommandsHandler(const std::shared_ptr<rmw_request_id_t> request_header,
+                         const std::shared_ptr<rov_msgs::srv::UserInput::Request> request,
+                         std::shared_ptr<rov_msgs::srv::UserInput::Response> response);
 
 };
 }

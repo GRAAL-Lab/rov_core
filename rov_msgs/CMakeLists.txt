@@ -39,6 +39,7 @@ rosidl_generate_interfaces(rov_msgs
   "msg/ReferenceVelocities.msg"
   "msg/ThrustersReference.msg"
   "msg/DynamicPidControl.msg"
+  "msg/VehicleStatus.msg"
 
   # Commands
   #"msg/CommandHold.msg"

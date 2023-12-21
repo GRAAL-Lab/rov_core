@@ -20,7 +20,7 @@ const std::string micro_loop_count = "/rov/llc/micro_loop_count";
 
 //const std::string sensor_dvl = "/ulisse/llc/sensor/dvl";
 //const std::string sensor_fog = "/ulisse/llc/sensor/fog";
-const std::string llc_thrusters_reference_perc = "/ulisse/llc/reference_thrusters_percentage"; // thrusters_data
+const std::string llc_thrusters_reference_perc = "/rov/llc/reference_thrusters_percentage"; // thrusters_data
 //const std::string llc_thrusters_applied_perc = "/ulisse/llc/applied_thrusters_percentage";     // motor_applied_ref
 //const std::string llc_status = "/ulisse/llc/status";
 //const std::string llc_config = "/ulisse/llc/config";
@@ -39,7 +39,7 @@ const std::string forces = "/rov/forces";
 //const std::string nav_filter_data = "/ulisse/nav_filter/data";
 
 // CTRL
-//const std::string vehicle_status = "/ulisse/ctrl/vehicle_status";
+const std::string vehicle_status = "/rov/ctrl/vehicle_status";
 //const std::string thruster_mapping_control = "/ulisse/ctrl/thruster_mapping_info";
 const std::string classic_pid_control = "/rov/ctrl/classic_pid_control_info";
 //const std::string computed_torque_control = "/ulisse/ctrl/computed_torque_control_info";

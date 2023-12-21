@@ -37,7 +37,8 @@ struct TasksInfo {
 enum class ControlMode : int {
     ThrusterMapping,
     ClassicPIDControl,
-    ComputedTorque
+    ComputedTorque,
+    Forces
 };
 
 struct KCLConfiguration {
@@ -48,24 +49,25 @@ struct KCLConfiguration {
     Eigen::VectorXd saturationMin, saturationMax;
 
     KCLConfiguration()
-        : goToHoldAfterMove(false)
+        : goToHoldAfterMove(false),
+        controlLoopRate(100.0)
     {
     }
 
     bool ConfigureFromFile(libconfig::Config& confObj)
     {
 
-        if (!ctb::GetParam(confObj, goToHoldAfterMove, "goToHoldAfterMove"))
-            return false;
-        if (!ctb::GetParam(confObj, controlLoopRate, "controlLoopRate"))
+        //if (!ctb::GetParam(confObj, goToHoldAfterMove, "goToHoldAfterMove"))
+         //   return false;
+        /*if (!ctb::GetParam(confObj, controlLoopRate, "controlLoopRate"))
             return false;
         if (!ctb::GetParam(confObj, posAcceptanceRadius, "posAcceptanceRadius"))
             return false;
         if (!ctb::GetParamVector(confObj, saturationMax, "saturationMax"))
             return false;
         if (!ctb::GetParamVector(confObj, saturationMin, "saturationMin"))
-            return false;
-
+            return false;*/
+        std::cout << "reading until here " << std::endl;
         return true;
     }
 
@@ -277,6 +279,11 @@ struct DCLConfiguration {
             const libconfig::Setting& computedTorqueCtr = root["computedTorqueControl"];
             if (!computedTorqueControl.ConfigureFromFile(computedTorqueCtr))
                 return false;
+
+        } else if (ctrlMode == ControlMode::Forces) {
+            //const libconfig::Setting& computedTorqueCtr = root["computedTorqueControl"];
+            //if (!computedTorqueControl.ConfigureFromFile(computedTorqueCtr))
+                //return false;
 
         } else {
             std::cerr << "Type of control not recognized" << std::endl;
