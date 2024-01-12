@@ -55,7 +55,7 @@ class DynamicRovController : public rclcpp::Node {
     // ulisse model
     //SurfaceVehicleModel ulisseModel;
     Underwater_Vehicle rovModel_;
-    Eigen::Matrix6d rov_allocationMatrix;
+    Eigen::MatrixXd rov_allocationMatrix;
 
     //rclcpp::Service<ulisse_msgs::srv::ResetConfiguration>::SharedPtr srvResetConf_;
 
@@ -97,7 +97,7 @@ class DynamicRovController : public rclcpp::Node {
     //ctb::DigitalPID pidYawRateCT;
     //ctb::DigitalPID pidSurgeCT;
 
-    Eigen::Vector3d tau = Eigen::Vector3d::Zero();
+    //Eigen::Vector6d tau = Eigen::Vector3d::Zero();
 
     //void ResetConfHandler(const std::shared_ptr<rmw_request_id_t> request_header,
     //    const std::shared_ptr<ulisse_msgs::srv::ResetConfiguration::Request> request,
@@ -108,7 +108,7 @@ class DynamicRovController : public rclcpp::Node {
     //void ThrusterMappingInizialization(std::shared_ptr<DCLConfiguration> conf, double sampleTime, ctb::DigitalPID& pid);
     void ClassicPidControlInizialization(std::shared_ptr<DCLConfiguration> conf, double sampleTime, ctb::DigitalPID& pidSurge, ctb::DigitalPID& pidYawRate);
 
-    void MoveByForce(const Eigen::Vector6d &force, Eigen::Vector6d &volt);
+    void MoveByForce(const Eigen::Vector6d &force, Eigen::VectorXd &volt);
 
     //void ComputedTorqueControlInizialization(std::shared_ptr<DCLConfiguration> conf, double sampleTime, ctb::DigitalPID& pidSurge, ctb::DigitalPID& pidYawRate);
 

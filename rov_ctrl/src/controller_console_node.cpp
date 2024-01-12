@@ -43,14 +43,17 @@ int main(int argc, char* argv[])
 
     while (rclcpp::ok()) {
         std::cout << std::endl;
-        std::cout << "1)  Halt ° " << std::endl;
-        std::cout << "2)  Hold * " << std::endl;
-        std::cout << "3)  Move Forward -)" << std::endl;
-        std::cout << "4)  Move Backward (-" << std::endl;
-        std::cout << "5)  Move Up ^ " << std::endl;
-        std::cout << "6)  Move Down _ " << std::endl;
-        std::cout << "7)  Turn Left <--" << std::endl;
-        std::cout << "8)  Turn Right -->" << std::endl;
+        std::cout << "0)  Halt ° " << std::endl;
+        std::cout << "5)  Hold * " << std::endl;
+        std::cout << "8)  Move Forward -)" << std::endl;
+        std::cout << "2)  Move Backward (-" << std::endl;
+        std::cout << "4)  Move Left <--" << std::endl;
+        std::cout << "6)  Move Right -->" << std::endl;
+        std::cout << "9)  Move Up ^ " << std::endl;
+        std::cout << "3)  Move Down _ " << std::endl;
+        std::cout << "7)  Turn Left <-(" << std::endl;
+        std::cout << "1)  Turn Right )->" << std::endl;
+
 
         //std::cout << tc::bluL << "4)  " << tc::none << "Speed-Heading reference" << std::endl;
         std::cout << "Enter command..." << std::endl;
@@ -66,37 +69,45 @@ int main(int argc, char* argv[])
         send = true;
 
         switch (choice) {
-        case 1: {
+        case 0: {
             serviceReq->motion_type = rov::inputs::ID::halt;
             std::cout << "halt " <<std::endl;
         } break;
-        case 2: {
+        case 5: {
             serviceReq->motion_type = rov::inputs::ID::hold;
             std::cout << "hold " <<std::endl;
         } break;
-        case 3: {
+        case 8: {
             serviceReq->motion_type = rov::inputs::ID::forward;
             std::cout << "forward " <<std::endl;
         } break;
-        case 4: {
+        case 2: {
             serviceReq->motion_type = rov::inputs::ID::backward;
             std::cout << "backward " <<std::endl;
         } break;
-        case 5: {
-            serviceReq->motion_type = rov::inputs::ID::up;
-            std::cout << "up " <<std::endl;
-        } break;
-        case 6: {
-            serviceReq->motion_type = rov::inputs::ID::down;
-            std::cout << "down " <<std::endl;
-        } break;
-        case 7: {
+        case 4: {
             serviceReq->motion_type = rov::inputs::ID::left;
             std::cout << "left " <<std::endl;
         } break;
-        case 8: {
+        case 6: {
             serviceReq->motion_type = rov::inputs::ID::right;
             std::cout << "right " <<std::endl;
+        } break;
+        case 9: {
+            serviceReq->motion_type = rov::inputs::ID::up;
+            std::cout << "up " <<std::endl;
+        } break;
+        case 3: {
+            serviceReq->motion_type = rov::inputs::ID::down;
+            std::cout << "down " <<std::endl;
+        } break; 
+        case 7: {
+            serviceReq->motion_type = rov::inputs::ID::turn_left;
+            std::cout << "turn left " <<std::endl;
+        } break;
+        case 1: {
+            serviceReq->motion_type = rov::inputs::ID::turn_right;
+            std::cout << "turn right " <<std::endl;
         } break;
 
         default:

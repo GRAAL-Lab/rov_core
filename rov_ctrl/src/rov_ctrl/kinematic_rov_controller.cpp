@@ -253,6 +253,14 @@ void ROVController::CommandsHandler(const std::shared_ptr<rmw_request_id_t> requ
         std::cout << "Received Command Down" << std::endl;
         current_state = rov::states::ID::down;
     }
+    else if (request->motion_type == rov::inputs::ID::turn_left) {
+        std::cout << "Received Command Turn Left" << std::endl;
+        current_state = rov::states::ID::turn_left;
+    }
+    else if (request->motion_type == rov::inputs::ID::turn_right) {
+        std::cout << "Received Command Turn Right" << std::endl;
+        current_state = rov::states::ID::turn_right;
+    }
     else{
         std::cout << "Received Command Halt" << std::endl;
         current_state = rov::states::ID::halt;

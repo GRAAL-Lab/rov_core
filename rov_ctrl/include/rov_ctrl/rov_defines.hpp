@@ -50,6 +50,8 @@ const uint8_t left = 6;
 const uint8_t right = 4;
 const uint8_t up = 9;
 const uint8_t down = 3;
+const uint8_t turn_left = 7;
+const uint8_t turn_right = 1;
 }
 }
 
@@ -64,6 +66,8 @@ const std::string forward = "Forward";
 const std::string backward = "Backward";
 const std::string left = "Left";
 const std::string right = "Right";
+const std::string turn_left = "Turn_Left";
+const std::string turn_right = "Turn_Right";
 const std::string up = "Up";
 const std::string down = "Down";
 //const std::string surgeheading = "Surge_Heading";

@@ -320,55 +320,6 @@ void VehicleSimulator::SimulateActuation()
     //std::cout << "volt_cmd = "<< volt_cmd << std::endl;
     rovModel_.DirectDynamics(volt_cmd, bodyF_cableForce, worldF_R_bodyF_, bodyF_relativeVelocity_, bodyF_relativeAcceleration_);
 
-/*
-    switch (option){
-        case rov::inputs::ID::halt: {
-            rovModel_.Halt(volt_cmd);
-            //std::cout << "Motion type : Halt" << std::endl;
-            break;
-        }
-        case rov::inputs::ID::up: {
-            rovModel_.moveUp(volt_cmd);
-            //std::cout << "Motion type : move Up" << std::endl;
-            break;
-        }
-        case rov::inputs::ID::down: {
-            rovModel_.moveDown(volt_cmd);
-            //std::cout << "Motion type : move Down" << std::endl;
-            break;
-        }
-        case rov::inputs::ID::left: {
-            rovModel_.moveLeft(volt_cmd);
-            //std::cout << "Motion type : turn Left" << std::endl;
-            break;
-        }
-        case rov::inputs::ID::right: {
-            rovModel_.moveRight(volt_cmd);
-            //std::cout << "Motion type : turn Right" << std::endl;
-            break;
-        }
-        case rov::inputs::ID::forward: {
-            rovModel_.moveForward(volt_cmd);
-            //std::cout << "Motion type : move Forward" << std::endl;
-            break;
-        }
-        case rov::inputs::ID::backward: {
-            rovModel_.moveBackward(volt_cmd);
-            //std::cout << "Motion type : move Backward" << std::endl;
-            break;
-        }
-        case rov::inputs::ID::hold: {
-            rovModel_.Hold(volt_cmd);
-            //std::cout << "Motion type : Hold" << std::endl;
-            break;
-        }
-        default: {
-            rovModel_.Halt(volt_cmd);
-            //std::cout << "Motion type : Halt" << std::endl;
-            break;
-        }
-    }
-*/
     rovModel_.ThrustersSaturation(volt_cmd, 1.0);
     //Compute the worldF_R_bodyF
     Eigen::RotationMatrix Rz, Ry, Rx;
@@ -725,22 +676,15 @@ void VehicleSimulator::SimulateSensors()
 
     Eigen::Vector3d LaSpezia_centroid;
     ctb::LatLong2LocalUTM(centroidLocation_, 0.0, centroidLocation_, LaSpezia_centroid);
-    Eigen::Vector3d vehicle_pos;
-    ctb::LatLong2LocalUTM(vehiclePos_, altitude_, centroidLocation_, vehicle_pos);
-    tf2::Quaternion q;
-    Eigen::Quaterniond eq(worldF_R_bodyF_);
 
-    q.setEuler( bodyF_orientation_.Pitch(), bodyF_orientation_.Roll(), bodyF_orientation_.Yaw()); // i used it
+    //Eigen::Vector3d vehicle_pos;
+    //ctb::LatLong2LocalUTM(vehiclePos_, altitude_, centroidLocation_, vehicle_pos);
+    //tf2::Quaternion q;
+    //Eigen::Quaterniond eq(worldF_R_bodyF_);
 
-    pt_.header.stamp = this->get_clock()->now();
-    pt_.header.frame_id = "ROVframe";
-    pt_.pose.position.x = vehicle_pos[0];
-    pt_.pose.position.y = vehicle_pos[1];
-    pt_.pose.position.z = vehicle_pos[2];
-    pt_.pose.orientation.x = q.x();
-    pt_.pose.orientation.y = q.y();
-    pt_.pose.orientation.z = q.z();
-    pt_.pose.orientation.w = q.w();
+    //q.setEuler( bodyF_orientation_.Pitch(), bodyF_orientation_.Roll(), bodyF_orientation_.Yaw()); // i used it
+
+
 
     t_stamp.header.stamp = this->get_clock()->now();
     t_stamp.header.frame_id = "world";
@@ -766,6 +710,7 @@ void VehicleSimulator::SimulateSensors()
     t_stamp_temp.transform.rotation.w = 0.0;
     tf_broadcaster_->sendTransform(t_stamp_temp);*/
 
+    /*
     tf2::Quaternion q1;
     //Eigen::Quaterniond eqq(worldF_R_bodyF_);
     //tf2::
@@ -778,6 +723,7 @@ void VehicleSimulator::SimulateSensors()
     ori.Yaw(0.0);
     q1.setEuler( ori.Pitch(), ori.Roll() , ori.Yaw());
 
+
     t_stamp_temp.header.stamp = this->get_clock()->now();
     t_stamp_temp.header.frame_id = "centroid";
     t_stamp_temp.child_frame_id = "temp";
@@ -788,7 +734,7 @@ void VehicleSimulator::SimulateSensors()
     t_stamp_temp.transform.rotation.y = q1.y();
     t_stamp_temp.transform.rotation.z = q1.z();
     t_stamp_temp.transform.rotation.w = q1.w();
-    tf_broadcaster_->sendTransform(t_stamp_temp);
+    tf_broadcaster_->sendTransform(t_stamp_temp); */
 
     /*
     t_stamp_ROV.header.stamp = this->get_clock()->now();
@@ -828,6 +774,16 @@ void VehicleSimulator::SimulateSensors()
     t_stamp_ROV.transform.rotation.z = q2.z();
     t_stamp_ROV.transform.rotation.w = q2.w();
     tf_broadcaster_ROV->sendTransform(t_stamp_ROV);
+
+    pt_.header.stamp = this->get_clock()->now();
+    pt_.header.frame_id = "ROVframe";
+    pt_.pose.position.x = ROVpose_.x();
+    pt_.pose.position.y = ROVpose_.y();
+    pt_.pose.position.z = altitude_;
+    pt_.pose.orientation.x = q2.x();
+    pt_.pose.orientation.y = q2.y();
+    pt_.pose.orientation.z = q2.z();
+    pt_.pose.orientation.w = q2.w();
 
     /*t_stamp_ROV.header.stamp = this->get_clock()->now();
     t_stamp_ROV.header.frame_id = "world";
@@ -872,14 +828,14 @@ void VehicleSimulator::SimulateSensors()
 
     t_stamp_ROV.header.stamp = this->get_clock()->now();
     t_stamp_ROV.header.frame_id = "world";
-    t_stamp_ROV.child_frame_id = "cable_p2";
+    t_stamp_ROV.child_frame_id = "cable";
     t_stamp_ROV.transform.translation.x = cableEndPosXY_.x();
     t_stamp_ROV.transform.translation.y = cableEndPosXY_.y();
     t_stamp_ROV.transform.translation.z = cableEndPosXY_.z();
-    t_stamp_ROV.transform.rotation.x = q.x();
-    t_stamp_ROV.transform.rotation.y = q.y();
-    t_stamp_ROV.transform.rotation.z = q.z();
-    t_stamp_ROV.transform.rotation.w = q.w();
+    t_stamp_ROV.transform.rotation.x = q2.x();
+    t_stamp_ROV.transform.rotation.y = q2.y();
+    t_stamp_ROV.transform.rotation.z = q2.z();
+    t_stamp_ROV.transform.rotation.w = q2.w();
     tf_broadcaster_ROV->sendTransform(t_stamp_ROV);
 
 }

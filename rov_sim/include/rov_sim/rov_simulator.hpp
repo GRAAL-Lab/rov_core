@@ -81,7 +81,7 @@ class VehicleSimulator : public rclcpp::Node {
     double vehicleTrack_, vehicleSpeed_;
 
     double n_p_, n_s_;
-    Eigen::Vector6d volt_cmd; // volt given to rov thrusters
+    Eigen::VectorXd volt_cmd; // volt given to rov thrusters
 
     uint32_t timestamp_count_; // [200Hz counter]
     uint32_t stepssincepps_count_;
