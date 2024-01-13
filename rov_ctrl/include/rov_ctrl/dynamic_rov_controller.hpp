@@ -118,6 +118,8 @@ class DynamicRovController : public rclcpp::Node {
     void VehicleForcesCB(const rov_msgs::msg::Forces::SharedPtr msg);
     //void VehicleStatusCB(const ulisse_msgs::msg::VehicleStatus::SharedPtr msg);
 
+    Eigen::VectorXd thruster_voltage;
+
 
 public:
     DynamicRovController(std::string file_name);

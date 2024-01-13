@@ -118,6 +118,10 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
 
     ROVpose_ = ROVprepose_ = pos_initial;
 
+    if(rovModel_.params.heavyConf)
+        volt_cmd.resize(8,1);
+    else
+        volt_cmd.resize(6,1);
     volt_cmd.setZero(); // volt should be between 0 to 1
     //volt_cmd[0] = 0.05;
     //volt_cmd[1] = 0.05;
@@ -317,10 +321,10 @@ void VehicleSimulator::SimulateActuation()
     //bodyF_cableForce(0) = 10.0;
     //bodyF_cableForce << 10.0, 0.0, -0.0, -0.0, -0.0, -0.0;
     //rovModel_.Hold(volt_cmd);
-    //std::cout << "volt_cmd = "<< volt_cmd << std::endl;
+    std::cout << "volt_cmd = "<< volt_cmd << std::endl;
     rovModel_.DirectDynamics(volt_cmd, bodyF_cableForce, worldF_R_bodyF_, bodyF_relativeVelocity_, bodyF_relativeAcceleration_);
 
-    rovModel_.ThrustersSaturation(volt_cmd, 1.0);
+    //rovModel_.ThrustersSaturation(volt_cmd, 1.0);
     //Compute the worldF_R_bodyF
     Eigen::RotationMatrix Rz, Ry, Rx;
     Rz << cos(bodyF_orientation_.Yaw()), -sin(bodyF_orientation_.Yaw()), 0,
@@ -953,6 +957,11 @@ void VehicleSimulator::ThrustersReferenceCB(const rov_msgs::msg::ThrustersRefere
     volt_cmd[3] = msg->forth_percentage;
     volt_cmd[4] = msg->fifth_percentage;
     volt_cmd[5] = msg->sixth_percentage;
+
+    if(rovModel_.params.heavyConf){
+        volt_cmd[6] = msg->seventh_percentage;
+        volt_cmd[7] = msg->eighth_percentage;
+    }
 
     //motorTimeout_.Start();
 }

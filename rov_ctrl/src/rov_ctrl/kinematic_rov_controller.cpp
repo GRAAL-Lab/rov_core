@@ -51,7 +51,7 @@ ROVController::ROVController(std::string conf_filename)
     // Main function timer
     //int msRunPeriod = 1.0 / (conf_->controlLoopRate) * 1000;
     int msRunPeriod = 1.0 / (100.0) * 1000;
-    std::cout << " before runTimer " << std::endl;
+    //std::cout << " before runTimer " << std::endl;
     //std::cout << "Controller Rate: " << conf_->controlLoopRate << "Hz" << std::endl;
     runTimer_ = this->create_wall_timer(std::chrono::milliseconds(msRunPeriod), std::bind(&ROVController::Run, this));
 

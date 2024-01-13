@@ -55,33 +55,57 @@ DynamicRovController::DynamicRovController(std::string file_name)
     std::cout << tc::brown << *dcl_conf << tc::none << std::endl;
 
     rovModel_.params = dcl_conf->rovModel;
-    Eigen::MatrixXd T,K;
-    K = rovModel_.params.K_diag.asDiagonal();
+    Eigen::MatrixXd T,K,Q;
+    //K = rovModel_.params.K_diag.asDiagonal();
     //Q = rovModel_.params.Q_diag.asDiagonal();
-    if(rovModel_.params.T_vector.size() == 36){
+
+
+    if(!rovModel_.params.heavyConf){
+        rovModel_.params.K_diag.conservativeResize(6,1);
+        rovModel_.params.Q_diag.conservativeResize(6,1);
+        K.resize(6,6);
+        K = rovModel_.params.K_diag.asDiagonal();
+        Q.resize(6,6);
+        Q = rovModel_.params.Q_diag.asDiagonal();
+        T.resize(6,6);
+
         T.row(0) = rovModel_.params.T_vector.segment(0,6);
         T.row(1) = rovModel_.params.T_vector.segment(6,6);
         T.row(2) = rovModel_.params.T_vector.segment(12,6);
         T.row(3) = rovModel_.params.T_vector.segment(18,6);
         T.row(4) = rovModel_.params.T_vector.segment(24,6);
         T.row(5) = rovModel_.params.T_vector.segment(30,6);
-        if(K.size()!= 6) std::cout << "ERROR: K and T size are not compatible" << std::endl;
     }
-    else if(rovModel_.params.T_vector.size() == 48){
+    else{
+        rovModel_.params.K_diag.conservativeResize(8,1);
+        rovModel_.params.Q_diag.conservativeResize(8,1);
+        K.resize(8,8);
+        K = rovModel_.params.K_diag.asDiagonal();
+        Q.resize(8,8);
+        Q = rovModel_.params.Q_diag.asDiagonal();
+        T.resize(6,8);
+
         T.row(0) = rovModel_.params.T_vector.segment(0,8);
         T.row(1) = rovModel_.params.T_vector.segment(8,8);
         T.row(2) = rovModel_.params.T_vector.segment(16,8);
         T.row(3) = rovModel_.params.T_vector.segment(24,8);
         T.row(4) = rovModel_.params.T_vector.segment(32,8);
         T.row(5) = rovModel_.params.T_vector.segment(40,8);
-        if(K.size()!= 8) std::cout << "ERROR: K and T size are not compatible" << std::endl;
     }
-    else{
-        T.setZero();
-        std::cout << "T thruseter allocation matrix is not correct (size)" << std::endl;
-    }
+    //K = rovModel_.params.K;
+    //Q = rovModel_.params.Q;
+    //T = rovModel_.params.T;
 
-    rov_allocationMatrix = T*K;
+    //std::cout << "Q =" << Q << std::endl;
+    //std::cout << "T*K =" << T*K << std::endl;
+    //std::cout << "T*K*Q =" << T*K*Q << std::endl;
+    rov_allocationMatrix = T*K*Q;
+
+    if(rovModel_.params.heavyConf)
+        thruster_voltage.resize(8,1);
+    else
+        thruster_voltage.resize(6,1);
+
     //Controller inizialization
     ClassicPidControlInizialization(dcl_conf, sampleTime_, pidSurgeCP, pidYawRateCP);
 
@@ -126,7 +150,8 @@ void DynamicRovController::Run()
     //double relSurgeFbk;
     //double yawRateFbk;
 
-    Eigen::VectorXd thruster_voltage;
+
+
 
     if (vehicleStatus.vehicle_state != rov::states::ID::halt) {
         //ThrusterMapping mode
@@ -261,13 +286,17 @@ void DynamicRovController::Run()
             simulatedVelocitySensorPub_->publish(simulatedVelocitySensor);
         }*/
         rovModel_.ThrustersSaturation(thruster_voltage, 1.0);
-        std::cout << "thrusterVoltage " << thruster_voltage <<std::endl;
+        //std::cout << "thrusterVoltage " << thruster_voltage <<std::endl;
         thrustersReference.first_percentage = thruster_voltage[0];
         thrustersReference.second_percentage = thruster_voltage[1];
         thrustersReference.third_percentage = thruster_voltage[2];
         thrustersReference.forth_percentage = thruster_voltage[3];
         thrustersReference.fifth_percentage = thruster_voltage[4];
         thrustersReference.sixth_percentage = thruster_voltage[5];
+        if(rovModel_.params.heavyConf){
+            thrustersReference.seventh_percentage = thruster_voltage[6];
+            thrustersReference.eighth_percentage = thruster_voltage[7];
+        }
     } else {
         //std::cout << "HaltMode " << std::endl;
         thrustersReference.first_percentage = 0.0;
@@ -276,6 +305,10 @@ void DynamicRovController::Run()
         thrustersReference.forth_percentage = 0.0;
         thrustersReference.fifth_percentage = 0.0;
         thrustersReference.sixth_percentage = 0.0;
+        if(rovModel_.params.heavyConf){
+            thrustersReference.seventh_percentage = 0.0;
+            thrustersReference.eighth_percentage = 0.0;
+        }
 
         /*if (dcl_conf->ctrlMode == ControlMode::ThrusterMapping) {
             pidSurgeTM.Reset();
@@ -363,9 +396,10 @@ void DynamicRovController::MoveByForce(const Eigen::Vector6d &force, Eigen::Vect
     tau[5] = vehicleForces.bodyframe_g[5];
 
     Eigen::JacobiSVD<Eigen::MatrixXd> svd( rov_allocationMatrix, Eigen::ComputeFullV | Eigen::ComputeFullU );
-    std::cout << "rov_allocationMatrix = " << rov_allocationMatrix << std::endl;
+    //std::cout << "rov_allocationMatrix = " << rov_allocationMatrix << std::endl;
     volt = svd.solve(- tau + force);
-    std::cout << "T*K*volt = " << rov_allocationMatrix*volt << std::endl;
+    //std::cout << "- tau + force = " << - tau + force << std::endl;
+    //std::cout << "T*K*volt = " << rov_allocationMatrix*volt << std::endl;
 }
 
 void DynamicRovController::VehicleStatusCB(const rov_msgs::msg::VehicleStatus::SharedPtr msg) { vehicleStatus = *msg; }
