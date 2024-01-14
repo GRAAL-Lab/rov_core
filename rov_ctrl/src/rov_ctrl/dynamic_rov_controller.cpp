@@ -75,6 +75,8 @@ DynamicRovController::DynamicRovController(std::string file_name)
         T.row(3) = rovModel_.params.T_vector.segment(18,6);
         T.row(4) = rovModel_.params.T_vector.segment(24,6);
         T.row(5) = rovModel_.params.T_vector.segment(30,6);
+
+        thruster_voltage.resize(6,1);
     }
     else{
         rovModel_.params.K_diag.conservativeResize(8,1);
@@ -91,20 +93,17 @@ DynamicRovController::DynamicRovController(std::string file_name)
         T.row(3) = rovModel_.params.T_vector.segment(24,8);
         T.row(4) = rovModel_.params.T_vector.segment(32,8);
         T.row(5) = rovModel_.params.T_vector.segment(40,8);
+
+        thruster_voltage.resize(8,1);
     }
     //K = rovModel_.params.K;
     //Q = rovModel_.params.Q;
     //T = rovModel_.params.T;
 
-    //std::cout << "Q =" << Q << std::endl;
-    //std::cout << "T*K =" << T*K << std::endl;
-    //std::cout << "T*K*Q =" << T*K*Q << std::endl;
-    rov_allocationMatrix = T*K*Q;
-
-    if(rovModel_.params.heavyConf)
-        thruster_voltage.resize(8,1);
-    else
-        thruster_voltage.resize(6,1);
+    std::cout << "Q =" << Q << std::endl;
+    std::cout << "T =" << T << std::endl;
+    std::cout << "K =" << K<< std::endl;
+    rov_allocationMatrix = T*K*Q;       
 
     //Controller inizialization
     ClassicPidControlInizialization(dcl_conf, sampleTime_, pidSurgeCP, pidYawRateCP);
@@ -286,7 +285,7 @@ void DynamicRovController::Run()
             simulatedVelocitySensorPub_->publish(simulatedVelocitySensor);
         }*/
         rovModel_.ThrustersSaturation(thruster_voltage, 1.0);
-        //std::cout << "thrusterVoltage " << thruster_voltage <<std::endl;
+        std::cout << "thrusterVoltage " << thruster_voltage <<std::endl;
         thrustersReference.first_percentage = thruster_voltage[0];
         thrustersReference.second_percentage = thruster_voltage[1];
         thrustersReference.third_percentage = thruster_voltage[2];
@@ -398,8 +397,8 @@ void DynamicRovController::MoveByForce(const Eigen::Vector6d &force, Eigen::Vect
     Eigen::JacobiSVD<Eigen::MatrixXd> svd( rov_allocationMatrix, Eigen::ComputeFullV | Eigen::ComputeFullU );
     //std::cout << "rov_allocationMatrix = " << rov_allocationMatrix << std::endl;
     volt = svd.solve(- tau + force);
-    //std::cout << "- tau + force = " << - tau + force << std::endl;
-    //std::cout << "T*K*volt = " << rov_allocationMatrix*volt << std::endl;
+    std::cout << "- tau + force = " << - tau + force << std::endl;
+    std::cout << "T*K*volt = " << rov_allocationMatrix*volt << std::endl;
 }
 
 void DynamicRovController::VehicleStatusCB(const rov_msgs::msg::VehicleStatus::SharedPtr msg) { vehicleStatus = *msg; }

@@ -321,7 +321,8 @@ void VehicleSimulator::SimulateActuation()
     //bodyF_cableForce(0) = 10.0;
     //bodyF_cableForce << 10.0, 0.0, -0.0, -0.0, -0.0, -0.0;
     //rovModel_.Hold(volt_cmd);
-    std::cout << "volt_cmd = "<< volt_cmd << std::endl;
+
+    //std::cout << "volt_cmd = "<< volt_cmd << std::endl;
     rovModel_.DirectDynamics(volt_cmd, bodyF_cableForce, worldF_R_bodyF_, bodyF_relativeVelocity_, bodyF_relativeAcceleration_);
 
     //rovModel_.ThrustersSaturation(volt_cmd, 1.0);
