@@ -34,7 +34,7 @@ add_custom_target(.Files. SOURCES ${SOURCE_FILES})
 
 include_directories(
   include
-  #${rov_msgs_INCLUDE_DIRS}
+  ${rov_msgs_INCLUDE_DIRS}
 )
 
 ## Libraries ##

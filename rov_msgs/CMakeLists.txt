@@ -69,9 +69,9 @@ install(
   DESTINATION include
 )
 
-install(
-  FILES mapping_rules.yaml
-  DESTINATION share/${PROJECT_NAME}
-)
+#install(
+#  # File
+#  DESTINATION share/${PROJECT_NAME}
+#)
 
 ament_package()

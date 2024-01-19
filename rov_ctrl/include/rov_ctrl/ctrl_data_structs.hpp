@@ -46,28 +46,34 @@ struct KCLConfiguration {
     bool goToHoldAfterMove;
     double posAcceptanceRadius;
     double controlLoopRate;
+
     Eigen::VectorXd saturationMin, saturationMax;
+    double rovSpeed;
 
     KCLConfiguration()
         : goToHoldAfterMove(false),
-        controlLoopRate(100.0)
+          controlLoopRate(100.0),
+          rovSpeed(1.0)
     {
     }
 
-    bool ConfigureFromFile(libconfig::Config& confObj)
+    bool ConfigureFromFile(libconfig::Config& confObj) //noexcept(false)
     {
-
-        //if (!ctb::GetParam(confObj, goToHoldAfterMove, "goToHoldAfterMove"))
-         //   return false;
-        /*if (!ctb::GetParam(confObj, controlLoopRate, "controlLoopRate"))
+        //const libconfig::Setting& root = confObj.getRoot();
+        /*
+        if (!ctb::GetParam(confObj, goToHoldAfterMove, "goToHoldAfterMove"))
             return false;
         if (!ctb::GetParam(confObj, posAcceptanceRadius, "posAcceptanceRadius"))
+            return false;
+        if (!ctb::GetParam(confObj, controlLoopRate, "controlLoopRate"))
             return false;
         if (!ctb::GetParamVector(confObj, saturationMax, "saturationMax"))
             return false;
         if (!ctb::GetParamVector(confObj, saturationMin, "saturationMin"))
-            return false;*/
-        std::cout << "reading until here " << std::endl;
+            return false;
+        if (!ctb::GetParam(confObj, rovSpeed, "ROVvelocity"))
+            return false;
+        */
         return true;
     }
 
@@ -79,6 +85,7 @@ struct KCLConfiguration {
                   << "GoToHoldAfterMove: " << a.goToHoldAfterMove << "\n"
                   << "SaturationMin: " << a.saturationMin.transpose() << "\n"
                   << "SaturationMax: " << a.saturationMax.transpose() << "\n"
+                  << "rovSpeed: " << a.rovSpeed << "\n"
                   << "===============================\n";
     }
 };

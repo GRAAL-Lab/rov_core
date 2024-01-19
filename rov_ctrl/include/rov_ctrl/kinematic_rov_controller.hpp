@@ -8,6 +8,7 @@
 #include "rov_msgs/msg/reference_velocities.hpp"
 #include "rov_msgs/msg/vehicle_status.hpp"
 #include <string>
+#include <fsm/fsm.h>
 #include "rov_ctrl/ctrl_data_structs.hpp"
 
 namespace rov {
@@ -47,6 +48,17 @@ class ROVController : public rclcpp::Node {
 
     int option; // motion of ROV
     std::string current_state;
+
+    // FSM
+    /*
+    fsm::FSM uFsm_;
+
+    std::shared_ptr<states::StateHalt> stateHalt_;
+    std::shared_ptr<states::StateHold> stateHold_;
+    std::shared_ptr<states::StateLatLong> stateLatLong_;
+    std::shared_ptr<states::StateSurgeHeading> stateSurgeHeading_;
+    std::shared_ptr<states::StateSurgeYawRate> stateSurgeYawRate_;
+    */
 
     bool LoadConfiguration(std::shared_ptr<KCLConfiguration>& conf);
 

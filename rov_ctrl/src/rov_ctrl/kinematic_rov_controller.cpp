@@ -53,6 +53,7 @@ ROVController::ROVController(std::string conf_filename)
     int msRunPeriod = 1.0 / (100.0) * 1000;
     //std::cout << " before runTimer " << std::endl;
     //std::cout << "Controller Rate: " << conf_->controlLoopRate << "Hz" << std::endl;
+    //std::cout << "Controller Rate: " << conf_->rovSpeed << " m/s" << std::endl;
     runTimer_ = this->create_wall_timer(std::chrono::milliseconds(msRunPeriod), std::bind(&ROVController::Run, this));
 
 
@@ -66,9 +67,9 @@ bool ROVController::LoadConfiguration(std::shared_ptr<KCLConfiguration>& conf)
     ///////////////////////////////////////////////////////////////////////////////
     /////       LOAD CONFIGURATION FROM NAV FILTER TO READ CENTROID
     ///
-    std::string package_share_directory = ament_index_cpp::get_package_share_directory("nav_filter");
+    std::string package_share_directory = ament_index_cpp::get_package_share_directory("nav_filter_rov");
     std::string confPath = package_share_directory;
-    confPath.append("/conf/navigation_filter.conf");
+    confPath.append("/conf/navigation_filter_rov.conf");
 
     // Read the file. If there is an error, report it and exit.
     try {
@@ -206,6 +207,21 @@ void ROVController::PublishControl(){
     vehicleStatusMsg.stamp.nanosec = now_stamp_nanosecs;
     vehicleStatusMsg.vehicle_state = current_state;
     vehicleStatusPub_->publish(vehicleStatusMsg);
+
+    // Publish reference velocities, for the DCL, only if we are not in HALT state
+    /*
+    if (.GetCurrentStateName() != rov::states::ID::halt) {
+        // If we are in SURGEYAWRATE state we bypass the Tpik solutions
+        if (uFsm_.GetCurrentStateName() == ulisse::states::ID::surgeyawrate) {
+            referenceVelocities.desired_surge = stateSurgeYawRate_->goalSurge;
+            referenceVelocities.desired_yaw_rate = stateSurgeYawRate_->goalYawRate;
+        } else {
+            referenceVelocities.desired_surge = yTpik_[0];
+            referenceVelocities.desired_yaw_rate = yTpik_[5];
+        }
+        referenceVelocitiesPub_->publish(referenceVelocities);
+    }
+    */
 }
 
 void ROVController::CommandsHandler(const std::shared_ptr<rmw_request_id_t> request_header,
