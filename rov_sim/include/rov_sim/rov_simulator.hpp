@@ -5,15 +5,19 @@
 #include <memory>
 #include <random>
 
+#include "rov_msgs/msg/compass.hpp"
+#include "rov_msgs/msg/gps_data.hpp"
+#include "rov_msgs/msg/imu_data.hpp"
+#include "rov_msgs/msg/magnetometer.hpp"
+#include "rov_msgs/msg/pressure_data.hpp"
+
 /*#include "surface_vehicle_model/surfacevehiclemodel.hpp"
 
 #include "ulisse_msgs/msg/ambient_sensors.hpp"
-#include "ulisse_msgs/msg/compass.hpp"
-#include "ulisse_msgs/msg/gps_data.hpp"
-#include "ulisse_msgs/msg/imu_data.hpp"
+
 #include "ulisse_msgs/msg/dvl_data.hpp"
 #include "ulisse_msgs/msg/fog_data.hpp"
-#include "ulisse_msgs/msg/magnetometer.hpp"
+
 
 #include "ulisse_msgs/msg/llc_thrusters.hpp"
 #include "ulisse_msgs/msg/thrusters_reference.hpp"
@@ -100,28 +104,33 @@ class VehicleSimulator : public rclcpp::Node {
     // service
     //rclcpp::Service<rov_msgs::srv::UserInput>::SharedPtr srvUserInput_;
 
-    //rov_msgs::msg::MicroLoopCount microLoopCountMsg_;
+    rov_msgs::msg::GPSData gpsMsg_;
+    rov_msgs::msg::Compass compassMsg_;
+    rov_msgs::msg::IMUData imuMsg_;
+    rov_msgs::msg::Magnetometer magnetometerMsg_;
+    rov_msgs::msg::PressureData pressureMsg_;
+
+    rclcpp::Publisher<rov_msgs::msg::GPSData>::SharedPtr gpsPub_;
+    rclcpp::Publisher<rov_msgs::msg::Compass>::SharedPtr compassPub_;
+    rclcpp::Publisher<rov_msgs::msg::IMUData>::SharedPtr imuPub_;
+    rclcpp::Publisher<rov_msgs::msg::Magnetometer>::SharedPtr magnetometerPub_;
+    rclcpp::Publisher<rov_msgs::msg::PressureData>::SharedPtr pressurePub_;
     /*
-    ulisse_msgs::msg::GPSData gpsMsg_;
-    ulisse_msgs::msg::Compass compassMsg_;
-    ulisse_msgs::msg::IMUData imuMsg_;
+
     //ulisse_msgs::msg::IMUData orientusMgs_;
     ulisse_msgs::msg::DVLData dvlMsg_;
     ulisse_msgs::msg::FOGData fogMsg_;
     ulisse_msgs::msg::AmbientSensors ambsensMsg_;
-    ulisse_msgs::msg::Magnetometer magnetometerMsg_;
-    ulisse_msgs::msg::ThrustersReference appliedMotorRefMsg_;
 
+    ulisse_msgs::msg::ThrustersReference appliedMotorRefMsg_;
     ulisse_msgs::msg::LLCThrusters motorsDataMsg_;
 
 
-    rclcpp::Publisher<ulisse_msgs::msg::GPSData>::SharedPtr gpsPub_;
-    rclcpp::Publisher<ulisse_msgs::msg::Compass>::SharedPtr compassPub_;
-    rclcpp::Publisher<ulisse_msgs::msg::IMUData>::SharedPtr imuPub_;
+
     rclcpp::Publisher<ulisse_msgs::msg::DVLData>::SharedPtr dvlPub_;
     rclcpp::Publisher<ulisse_msgs::msg::FOGData>::SharedPtr fogPub_;
     rclcpp::Publisher<ulisse_msgs::msg::AmbientSensors>::SharedPtr ambsensPub_;
-    rclcpp::Publisher<ulisse_msgs::msg::Magnetometer>::SharedPtr magnetometerPub_;
+
     rclcpp::Publisher<ulisse_msgs::msg::ThrustersReference>::SharedPtr appliedMotorRefPub_;
 
     rclcpp::Publisher<ulisse_msgs::msg::LLCThrusters>::SharedPtr motorsDataPub_;
@@ -130,6 +139,7 @@ class VehicleSimulator : public rclcpp::Node {
 
     int gpsPubCounter_, compassPubCounter_, imuPubCounter_, magnetometerPubCounter_, ambientPubCounter_;
     int orientusPubCounter_, dvlPubCounter_, fogPubCounter_; */
+    int gpsPubCounter_, compassPubCounter_, imuPubCounter_, magnetometerPubCounter_, pressurePubConter_;// ambientPubCounter_;
 
     futils::Timer motorTimeout_;
     rclcpp::Publisher<rov_msgs::msg::SimulatedSystem>::SharedPtr simulatedSystemPub_;
@@ -144,11 +154,6 @@ class VehicleSimulator : public rclcpp::Node {
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_ROV;
 
-    //rclcpp::Publisher<tf2_ros::StaticTransformBroadcaster>::SharedPtr tf_static_broadcaster_;
-    //std::shared_ptr<tf2_ros::StaticTransformBroadcaster> tf_static_broadcaster_;
-    //std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
-    //tf_static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
-
     double hp_, hs_;
 
     bool realTime_;
@@ -158,7 +163,7 @@ class VehicleSimulator : public rclcpp::Node {
     Eigen::RotationMatrix worldF_R_bodyF_;
 
     std::shared_ptr<SimulatorConfiguration> config_;
-    Underwater_Vehicle rovModel_;
+    UnderwaterVehicle rovModel_;
 
     int option; // motion of ROV
 
@@ -181,10 +186,6 @@ public:
     /*auto Altitude() const -> const rml::EulerRPY& { return bodyF_orientation_; }
     auto Latitude() const -> double { return latitude_; }
     auto Longitude() const -> double { return longitude_; }*/
-
-    /*void CommandsHandler(const std::shared_ptr<rmw_request_id_t> request_header,
-                         const std::shared_ptr<rov_msgs::srv::UserInput::Request> request,
-                         std::shared_ptr<rov_msgs::srv::UserInput::Response> response);*/
 
     /**
      * @brief Set if simulation should run in Realtime or not

@@ -31,10 +31,15 @@ rosidl_generate_interfaces(rov_msgs
   # Sensors
   "msg/Time.msg"
   "msg/RPY.msg"
+  "msg/IMUData.msg"
+  "msg/Compass.msg"
+  "msg/Magnetometer.msg"
+  "msg/PressureData.msg"
   "msg/LatLong.msg"
   "msg/LatLongAlt.msg"
   "msg/SimulatedSystem.msg"
   "msg/MicroLoopCount.msg"
+  "msg/GPSData.msg"
   "msg/Forces.msg"
   "msg/ReferenceVelocities.msg"
   "msg/ThrustersReference.msg"
@@ -42,18 +47,22 @@ rosidl_generate_interfaces(rov_msgs
   "msg/VehicleStatus.msg"
 
   # Commands
-  #"msg/CommandHold.msg"
+  "msg/CommandHold.msg"
+  "msg/CommandLatLongAlt.msg"
+  "msg/CommandSpeedHeading.msg"
   
   # LLC
   #"msg/LLCAck.msg"
 
   # Control
   #"msg/PolygonPath.msg"
+  "msg/NavFilterData.msg"
 
   
 
   ## Services ##
   "srv/UserInput.srv"
+  "srv/ControlCommand.srv"
 
   
   ## Other ##

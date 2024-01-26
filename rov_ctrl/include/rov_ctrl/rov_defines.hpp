@@ -55,13 +55,36 @@ const uint8_t turn_right = 1;
 }
 }
 
+namespace commands {
+
+namespace ID {
+
+const std::string halt = "halt_command";
+const std::string latlongalt = "moveto_command";
+const std::string hold = "hold_command";
+//const std::string surgeheading = "surgeheading_command";
+const std::string velocity = "velocity_command";
+//const std::string pathfollow = "pathfollow_command";
+}
+}
+
 namespace states {
 
 namespace ID {
 
-//const std::string latlong = "Move_To";
 const std::string halt = "Halt";
+const std::string latlongalt = "Move_To";
 const std::string hold = "Hold";
+//const std::string surgeheading = "Surge_Heading";
+const std::string velocity = "Surge_Sway_Heave_YawRate";
+//const std::string pathfollow = "Path_Following";
+}
+}
+
+namespace directions {
+
+namespace ID {
+
 const std::string forward = "Forward";
 const std::string backward = "Backward";
 const std::string left = "Left";
@@ -70,9 +93,8 @@ const std::string turn_left = "Turn_Left";
 const std::string turn_right = "Turn_Right";
 const std::string up = "Up";
 const std::string down = "Down";
-//const std::string surgeheading = "Surge_Heading";
-const std::string surgeyawrate = "Surge_YawRate";
-//const std::string pathfollow = "Path_Following";
+
+
 }
 }
 

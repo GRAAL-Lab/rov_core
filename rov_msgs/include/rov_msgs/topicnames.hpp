@@ -9,12 +9,13 @@ namespace topicnames {
 
 // LLC
 const std::string micro_loop_count = "/rov/llc/micro_loop_count";
-//const std::string sensor_gps_data = "/ulisse/llc/sensor/gps_data";
+const std::string sensor_gps_data = "/rov/llc/sensor/gps_data";
 //const std::string sensor_gps_status = "/ulisse/llc/sensor/gps_status";
-//const std::string sensor_compass = "/ulisse/llc/sensor/compass";
-//const std::string sensor_imu = "/ulisse/llc/sensor/imu";
+const std::string sensor_compass = "/rov/llc/sensor/compass";
+const std::string sensor_imu = "/rov/llc/sensor/imu";
 //const std::string sensor_ambient = "/ulisse/llc/sensor/ambient";
-//const std::string sensor_magnetometer = "/ulisse/llc/sensor/magnetometer";
+const std::string sensor_magnetometer = "/rov/llc/sensor/magnetometer";
+const std::string sensor_pressure = "/rov/llc/sensor/pressure";
 
 //const std::string sensor_imu_orientus = "/ulisse/llc/sensor/imu_orientus";
 
@@ -36,7 +37,7 @@ const std::string simulated_system = "/rov/simulated_system";
 const std::string forces = "/rov/forces";
 
 // NAV FILTER
-//const std::string nav_filter_data = "/ulisse/nav_filter/data";
+const std::string nav_filter_data = "/rov/nav_filter/data";
 
 // CTRL
 const std::string vehicle_status = "/rov/ctrl/vehicle_status";
@@ -74,10 +75,11 @@ const std::string reference_velocities = "/rov/ctrl/reference_velocities";
 // SERVICES
 //const std::string rosbag_service = "/bag_recorder_client";
 //const std::string llc_cmd_service = "/ulisse/service/llc_cmd";
-//const std::string control_cmd_service = "/ulisse/service/control_cmd";
+//
 //const std::string navfilter_cmd_service = "/ulisse/service/navfilter_cmd";
 //const std::string set_boundaries_service = "/ulisse/ctrl/set_boundaries";
 //const std::string get_boundaries_service = "/ulisse/ctrl/get_boundaries";
+const std::string control_cmd_service = "/rov/service/control_cmd";
 const std::string user_input_service = "/rov/service/user_input";
 
 // OTHER

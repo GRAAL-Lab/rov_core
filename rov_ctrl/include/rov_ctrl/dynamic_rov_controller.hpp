@@ -34,6 +34,7 @@
  #include "rov_msgs/msg/forces.hpp"
 #include "underwater_vehicle_model/underwater_vehicle.hpp"
 #include "rov_ctrl/ctrl_data_structs.hpp"
+#include "rov_msgs/srv/user_input.hpp"
 
 namespace rov {
 
@@ -54,7 +55,7 @@ class DynamicRovController : public rclcpp::Node {
 
     // ulisse model
     //SurfaceVehicleModel ulisseModel;
-    Underwater_Vehicle rovModel_;
+    UnderwaterVehicle rovModel_;
     Eigen::MatrixXd rov_allocationMatrix;
 
     //rclcpp::Service<ulisse_msgs::srv::ResetConfiguration>::SharedPtr srvResetConf_;
@@ -73,6 +74,7 @@ class DynamicRovController : public rclcpp::Node {
     rclcpp::Publisher<rov_msgs::msg::DynamicPidControl>::SharedPtr classicPidControlPub_;// = this->create_publisher<ulisse_msgs::msg::DynamicPidControl>(ulisse_msgs::topicnames::classic_pid_control, 1);
     //rclcpp::Publisher<ulisse_msgs::msg::DynamicPidControl>::SharedPtr computedTorqueControlPub_;// = this->create_publisher<ulisse_msgs::msg::DynamicPidControl>(ulisse_msgs::topicnames::computed_torque_control, 1);
 
+    rclcpp::Service<rov_msgs::srv::UserInput>::SharedPtr srvUserInput_;
 
     //local variables
     //ulisse_msgs::msg::ThrusterMappingControl thrusterMappingMsg;
@@ -119,12 +121,14 @@ class DynamicRovController : public rclcpp::Node {
     //void VehicleStatusCB(const ulisse_msgs::msg::VehicleStatus::SharedPtr msg);
 
     Eigen::VectorXd thruster_voltage;
+    int motion_direction;
 
 
 public:
     DynamicRovController(std::string file_name);
     virtual ~DynamicRovController();
-
+    void CommandsHandler(const std::shared_ptr<rmw_request_id_t> request_header, const std::shared_ptr<rov_msgs::srv::UserInput::Request> request,
+                         std::shared_ptr<rov_msgs::srv::UserInput::Response> response);
     void Run();
     void PublishControl();
 

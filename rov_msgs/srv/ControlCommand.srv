@@ -1,0 +1,6 @@
+string command_type
+CommandHold hold_cmd
+CommandLatLongAlt moveto_cmd
+CommandSpeedHeading sh_cmd
+---
+string res

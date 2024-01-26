@@ -18,6 +18,7 @@ find_package(underwater_vehicle_model REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(ctrl_toolbox REQUIRED)
 find_package(rov_msgs REQUIRED)
+find_package(rml REQUIRED)
 
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -41,9 +42,10 @@ include_directories(
 set(nav_filter_rov_lib_sources
     # Main Classes
     src/${PROJECT_NAME}/navigation_filter_rov.cpp
+    src/${PROJECT_NAME}/nav_data_structs.cpp
     #src/${PROJECT_NAME}/luenberger_observer/pos_vel_observer.cpp
     # Helpers
-    #src/${PROJECT_NAME}/nav_data_structs.cpp
+    #
     #src/${PROJECT_NAME}/kalman_filter/measurements/gps.cpp
     #src/${PROJECT_NAME}/kalman_filter/measurements/compass.cpp
     #src/${PROJECT_NAME}/kalman_filter/measurements/magnetometer.cpp
@@ -59,8 +61,19 @@ add_library(nav_filter_rov_lib ${nav_filter_rov_lib_sources})
 ament_target_dependencies(nav_filter_rov_lib rclcpp std_msgs rov_msgs underwater_vehicle_model)
 target_link_libraries(nav_filter_rov_lib ${underwater_vehicle_model_LIBRARIES} Geographic rml) # !!fsm ctrl_toolbox
 
+## Executables
+add_executable(nav_filter_node src/nav_filter_node.cpp)
+ament_target_dependencies(nav_filter_node rclcpp std_msgs rov_msgs rml ctrl_toolbox ament_index_cpp)
+target_link_libraries(nav_filter_node rml nav_filter_rov_lib ctrl_toolbox config++)
+
 # add_library(surface_vehicle_model_lib src/surfacevehiclemodel.cpp)
 # target_link_libraries(surface_vehicle_model_lib rml)
+
+# Install
+install(TARGETS
+  nav_filter_node
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 ## Install
 install(DIRECTORY

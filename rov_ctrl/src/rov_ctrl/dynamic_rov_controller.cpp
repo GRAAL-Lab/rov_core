@@ -43,6 +43,8 @@ DynamicRovController::DynamicRovController(std::string file_name)
     classicPidControlPub_ = this->create_publisher<rov_msgs::msg::DynamicPidControl>(rov_msgs::topicnames::classic_pid_control, 1);
     //computedTorqueControlPub_ = this->create_publisher<ulisse_msgs::msg::DynamicPidControl>(ulisse_msgs::topicnames::computed_torque_control, 1);
 
+    //Service
+    srvUserInput_ = this->create_service<rov_msgs::srv::UserInput>(rov_msgs::topicnames::user_input_service, std::bind(&DynamicRovController::CommandsHandler, this, _1, _2, _3));
 
     dcl_conf = std::make_shared<DCLConfiguration>();
 
@@ -55,55 +57,11 @@ DynamicRovController::DynamicRovController(std::string file_name)
     std::cout << tc::brown << *dcl_conf << tc::none << std::endl;
 
     rovModel_.params = dcl_conf->rovModel;
-    Eigen::MatrixXd T,K,Q;
-    //K = rovModel_.params.K_diag.asDiagonal();
-    //Q = rovModel_.params.Q_diag.asDiagonal();
 
-
-    if(!rovModel_.params.heavyConf){
-        rovModel_.params.K_diag.conservativeResize(6,1);
-        rovModel_.params.Q_diag.conservativeResize(6,1);
-        K.resize(6,6);
-        K = rovModel_.params.K_diag.asDiagonal();
-        Q.resize(6,6);
-        Q = rovModel_.params.Q_diag.asDiagonal();
-        T.resize(6,6);
-
-        T.row(0) = rovModel_.params.T_vector.segment(0,6);
-        T.row(1) = rovModel_.params.T_vector.segment(6,6);
-        T.row(2) = rovModel_.params.T_vector.segment(12,6);
-        T.row(3) = rovModel_.params.T_vector.segment(18,6);
-        T.row(4) = rovModel_.params.T_vector.segment(24,6);
-        T.row(5) = rovModel_.params.T_vector.segment(30,6);
-
-        thruster_voltage.resize(6,1);
-    }
-    else{
-        rovModel_.params.K_diag.conservativeResize(8,1);
-        rovModel_.params.Q_diag.conservativeResize(8,1);
-        K.resize(8,8);
-        K = rovModel_.params.K_diag.asDiagonal();
-        Q.resize(8,8);
-        Q = rovModel_.params.Q_diag.asDiagonal();
-        T.resize(6,8);
-
-        T.row(0) = rovModel_.params.T_vector.segment(0,8);
-        T.row(1) = rovModel_.params.T_vector.segment(8,8);
-        T.row(2) = rovModel_.params.T_vector.segment(16,8);
-        T.row(3) = rovModel_.params.T_vector.segment(24,8);
-        T.row(4) = rovModel_.params.T_vector.segment(32,8);
-        T.row(5) = rovModel_.params.T_vector.segment(40,8);
-
-        thruster_voltage.resize(8,1);
-    }
-    //K = rovModel_.params.K;
-    //Q = rovModel_.params.Q;
-    //T = rovModel_.params.T;
-
-    std::cout << "Q =" << Q << std::endl;
-    std::cout << "T =" << T << std::endl;
-    std::cout << "K =" << K<< std::endl;
-    rov_allocationMatrix = T*K*Q;       
+    std::cout << "Qparam =" << rovModel_.params.Q << std::endl;
+    std::cout << "Tparam =" << rovModel_.params.T << std::endl;
+    std::cout << "Kparam =" << rovModel_.params.K<< std::endl;
+    rov_allocationMatrix = rovModel_.params.T * rovModel_.params.K * rovModel_.params.Q;
 
     //Controller inizialization
     ClassicPidControlInizialization(dcl_conf, sampleTime_, pidSurgeCP, pidYawRateCP);
@@ -159,8 +117,57 @@ void DynamicRovController::Run()
             if(vehicleStatus.vehicle_state == rov::states::ID::hold){
                 Eigen::Vector6d tau; tau.setZero();
                 MoveByForce(tau,thruster_voltage);
+                motion_direction = rov::inputs::ID::hold;
                 //std::cout << "ControlMode hold" << std::endl;
             }
+            else if(vehicleStatus.vehicle_state == rov::states::ID::velocity){
+                Eigen::Vector6d tau; tau.setZero();
+
+                switch(motion_direction){
+                case rov::inputs::ID::halt :{
+                    //vehicleStatus.vehicle_state = rov::states::ID::halt;
+                } break;
+                case rov::inputs::ID::hold :{
+                    MoveByForce(tau,thruster_voltage);
+                } break;
+                case rov::inputs::ID::forward :{
+                    tau[0] = 10.0;
+                    MoveByForce(tau,thruster_voltage);
+                } break;
+                case rov::inputs::ID::backward :{
+                    tau[0] = -10.0;
+                    MoveByForce(tau,thruster_voltage);
+                } break;
+                case rov::inputs::ID::up :{
+                    tau[2] = -10.0;
+                    MoveByForce(tau,thruster_voltage);
+                } break;
+                case rov::inputs::ID::down :{
+                    tau[2] = 10.0;
+                    MoveByForce(tau,thruster_voltage);
+                } break;
+                case rov::inputs::ID::left :{
+                    tau[1] = -10.0;
+                    MoveByForce(tau,thruster_voltage);
+                } break;
+                case rov::inputs::ID::right :{
+                    tau[1] = 10.0;
+                    MoveByForce(tau,thruster_voltage);
+                } break;
+                case rov::inputs::ID::turn_left :{
+                    tau[5] = -0.1;
+                    MoveByForce(tau,thruster_voltage);
+                } break;
+                case rov::inputs::ID::turn_right :{
+                    tau[5] = 0.1;
+                    MoveByForce(tau,thruster_voltage);
+                } break;
+                default:{
+                    std::cout << "direction not supported (user input)" << std::endl;
+                } break;
+                }
+            }
+            /*
             else if(vehicleStatus.vehicle_state == rov::states::ID::forward){
                 Eigen::Vector6d tau; tau.setZero();
                 tau[0] = 10.0;
@@ -200,7 +207,42 @@ void DynamicRovController::Run()
                 Eigen::Vector6d tau; tau.setZero();
                 tau[1] = 10.0;
                 MoveByForce(tau,thruster_voltage);
+            }*/
+
+            /*
+            else if (request->motion_type == rov::inputs::ID::forward) {
+                std::cout << "Received Command Forward" << std::endl;
+                current_state = rov::states::ID::forward;
             }
+            else if (request->motion_type == rov::inputs::ID::backward) {
+                std::cout << "Received Command Backward" << std::endl;
+                current_state = rov::states::ID::backward;
+            }
+            else if (request->motion_type == rov::inputs::ID::right) {
+                std::cout << "Received Command Right" << std::endl;
+                current_state = rov::states::ID::right;
+            }
+            else if (request->motion_type == rov::inputs::ID::left) {
+                std::cout << "Received Command Left" << std::endl;
+                current_state = rov::states::ID::left;
+            }
+            else if (request->motion_type == rov::inputs::ID::up) {
+                std::cout << "Received Command Up" << std::endl;
+                current_state = rov::states::ID::up;
+            }
+            else if (request->motion_type == rov::inputs::ID::down) {
+                std::cout << "Received Command Down" << std::endl;
+                current_state = rov::states::ID::down;
+            }
+            else if (request->motion_type == rov::inputs::ID::turn_left) {
+                std::cout << "Received Command Turn Left" << std::endl;
+                current_state = rov::states::ID::turn_left;
+            }
+            else if (request->motion_type == rov::inputs::ID::turn_right) {
+                std::cout << "Received Command Turn Right" << std::endl;
+                current_state = rov::states::ID::turn_right;
+            }
+            */
 
         } else if (dcl_conf->ctrlMode == ControlMode::ClassicPIDControl) {
             //Dynamic Pids
@@ -285,7 +327,7 @@ void DynamicRovController::Run()
             simulatedVelocitySensorPub_->publish(simulatedVelocitySensor);
         }*/
         rovModel_.ThrustersSaturation(thruster_voltage, 1.0);
-        std::cout << "thrusterVoltage " << thruster_voltage <<std::endl;
+        //std::cout << "thrusterVoltage " << thruster_voltage <<std::endl;
         thrustersReference.first_percentage = thruster_voltage[0];
         thrustersReference.second_percentage = thruster_voltage[1];
         thrustersReference.third_percentage = thruster_voltage[2];
@@ -379,6 +421,21 @@ void DynamicRovController::ThrusterMappingInizialization(std::shared_ptr<DCLConf
     pid.Initialize(conf->thrusterMapping.pidGainsSurge, sampleTime, conf->thrusterMapping.pidSatSurge);
 }
 */
+
+void DynamicRovController::CommandsHandler(const std::shared_ptr<rmw_request_id_t> request_header,const std::shared_ptr<rov_msgs::srv::UserInput::Request> request,
+                                           std::shared_ptr<rov_msgs::srv::UserInput::Response> response){
+    // Create a callback function for when service requests are received.
+    (void) request_header;
+    RCLCPP_INFO(this->get_logger(), "Incoming request: %d", request->motion_type);
+    std::stringstream logg;
+    logg << "Incoming request: " << request->motion_type;
+
+    motion_direction = request->motion_type;
+
+    response->res = "command received";
+    RCLCPP_INFO(this->get_logger(), "Service Response: %s", response->res.c_str());
+}
+
 void DynamicRovController::ClassicPidControlInizialization(std::shared_ptr<DCLConfiguration> conf, double sampleTime, ctb::DigitalPID& pidSurge, ctb::DigitalPID& pidYawRate)
 {
     pidSurge.Initialize(conf->classicPidControl.pidGainsSurge, sampleTime, conf->classicPidControl.pidSatSurge);
@@ -397,8 +454,8 @@ void DynamicRovController::MoveByForce(const Eigen::Vector6d &force, Eigen::Vect
     Eigen::JacobiSVD<Eigen::MatrixXd> svd( rov_allocationMatrix, Eigen::ComputeFullV | Eigen::ComputeFullU );
     //std::cout << "rov_allocationMatrix = " << rov_allocationMatrix << std::endl;
     volt = svd.solve(- tau + force);
-    std::cout << "- tau + force = " << - tau + force << std::endl;
-    std::cout << "T*K*volt = " << rov_allocationMatrix*volt << std::endl;
+    //std::cout << "- tau + force = " << - tau + force << std::endl;
+    //std::cout << "T*K*volt = " << rov_allocationMatrix*volt << std::endl;
 }
 
 void DynamicRovController::VehicleStatusCB(const rov_msgs::msg::VehicleStatus::SharedPtr msg) { vehicleStatus = *msg; }

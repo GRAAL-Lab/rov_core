@@ -25,10 +25,11 @@ using std::placeholders::_1;
 VehicleSimulator::VehicleSimulator(const std::string file_name)
     : Node("simulator_node1")
     , geod_(GeographicLib::Geodesic::WGS84())
-    //, gpsPubCounter_(0)
-    //, compassPubCounter_(0)
-    //, imuPubCounter_(0)
-    //, magnetometerPubCounter_(0)
+    , gpsPubCounter_(0)
+    , compassPubCounter_(0)
+    , imuPubCounter_(0)
+    , magnetometerPubCounter_(0)
+    , pressurePubConter_(0)
     //, ambientPubCounter_(0)
     //, orientusPubCounter_(0)
     //, dvlPubCounter_(0)
@@ -60,11 +61,12 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     SetSampleTime(0.0103); // delta time taken from a simulation interval
 
     microLoopCountPub_ = this->create_publisher<rov_msgs::msg::MicroLoopCount>(rov_msgs::topicnames::micro_loop_count, 1);
-    //gpsPub_ = this->create_publisher<ulisse_msgs::msg::GPSData>(ulisse_msgs::topicnames::sensor_gps_data, 1);
-    //compassPub_ = this->create_publisher<ulisse_msgs::msg::Compass>(ulisse_msgs::topicnames::sensor_compass, 1);
-    //imuPub_ = this->create_publisher<ulisse_msgs::msg::IMUData>(ulisse_msgs::topicnames::sensor_imu, 1);
+    gpsPub_ = this->create_publisher<rov_msgs::msg::GPSData>(rov_msgs::topicnames::sensor_gps_data, 1);
+    compassPub_ = this->create_publisher<rov_msgs::msg::Compass>(rov_msgs::topicnames::sensor_compass, 1);
+    imuPub_ = this->create_publisher<rov_msgs::msg::IMUData>(rov_msgs::topicnames::sensor_imu, 1);
     //ambsensPub_ = this->create_publisher<ulisse_msgs::msg::AmbientSensors>(ulisse_msgs::topicnames::sensor_ambient, 1);
-    //magnetometerPub_ = this->create_publisher<ulisse_msgs::msg::Magnetometer>(ulisse_msgs::topicnames::sensor_magnetometer, 1);
+    magnetometerPub_ = this->create_publisher<rov_msgs::msg::Magnetometer>(rov_msgs::topicnames::sensor_magnetometer, 1);
+    pressurePub_ = this->create_publisher<rov_msgs::msg::PressureData>(rov_msgs::topicnames::sensor_pressure, 1);
     //dvlPub_ = this->create_publisher<ulisse_msgs::msg::DVLData>(ulisse_msgs::topicnames::sensor_dvl, 1);
     //fogPub_ = this->create_publisher<ulisse_msgs::msg::FOGData>(ulisse_msgs::topicnames::sensor_fog, 1);
     //appliedMotorRefPub_ = this->create_publisher<ulisse_msgs::msg::ThrustersReference>(ulisse_msgs::topicnames::llc_thrusters_applied_perc, 1);
@@ -317,16 +319,10 @@ void VehicleSimulator::SimulateActuation()
     //Eigen::RotationMatrix bodyF_R_worldF = worldF_R_bodyF_.transpose();
 
     bodyF_cableForce = rovModel_.ComputeFcable_bodyF(cableS_pos_worldF, cableE_pos_worldF, cable_length, worldF_R_bodyF_);
-    //bodyF_cableForce.setZero();
-    //bodyF_cableForce(0) = 10.0;
-    //bodyF_cableForce << 10.0, 0.0, -0.0, -0.0, -0.0, -0.0;
-    //rovModel_.Hold(volt_cmd);
 
     //std::cout << "volt_cmd = "<< volt_cmd << std::endl;
     rovModel_.DirectDynamics(volt_cmd, bodyF_cableForce, worldF_R_bodyF_, bodyF_relativeVelocity_, bodyF_relativeAcceleration_);
 
-    //rovModel_.ThrustersSaturation(volt_cmd, 1.0);
-    //Compute the worldF_R_bodyF
     Eigen::RotationMatrix Rz, Ry, Rx;
     Rz << cos(bodyF_orientation_.Yaw()), -sin(bodyF_orientation_.Yaw()), 0,
         sin(bodyF_orientation_.Yaw()), cos(bodyF_orientation_.Yaw()), 0,
@@ -367,9 +363,6 @@ void VehicleSimulator::SimulateActuation()
     //bodyF_relativeVelocity_ = bodyF_relativeVelocity_ + bodyF_relativeAcceleration_projected_ * Ts_;
     bodyF_relativeVelocity_ = bodyF_relativeVelocity_ + bodyF_relativeAcceleration_ * Ts_;
 
-    //add projection on bodyF_relativeVelocity (plane constraint)
-    //bodyF_relativeVelocity_ = bodyF_projection_ * bodyF_relativeVelocity_;
-
     // Projecting the acceleration and velocity on the world frame
     long now_nanosecs = (std::chrono::duration_cast<std::chrono::nanoseconds>(t_now_.time_since_epoch())).count();
     auto now_stamp_secs = static_cast<unsigned int>(now_nanosecs / static_cast<int>(1E9));
@@ -384,23 +377,11 @@ void VehicleSimulator::SimulateActuation()
         config_->wy.A * sin(2 * M_PI * config_->wy.f * t) + config_->wy.C,
         config_->wz.A * sin(2 * M_PI * config_->wz.f * t) + config_->wz.C; // 3d ROV motion
 
-    //worldF_relativeAcceleration_ = bodyF_orientation_.ToRotationMatrix().CartesianRotationMatrix() * bodyF_relativeAcceleration_projected_;
     worldF_relativeAcceleration_ = bodyF_orientation_.ToRotationMatrix().CartesianRotationMatrix() * bodyF_relativeAcceleration_;
     worldF_relativeVelocity_ = bodyF_orientation_.ToRotationMatrix().CartesianRotationMatrix() * (bodyF_relativeVelocity_ + bodyF_wavesEffects_);
 
-    //std::cout << "worldF_relativeVelocity_ = "<< worldF_relativeVelocity_ << std::endl;
-
     // Get the vehicle absolute velocity by adding the water current velocity
     worldF_velocity_ = worldF_relativeVelocity_ + worldF_waterVelocity_;
-
-
-    //std::cout << "worldF_velocity_ = "<< worldF_velocity_ << std::endl;
-
-    //std::cout << "orientatiYPR = " << bodyF_orientation_.Roll() << " " << bodyF_orientation_.Pitch() << " " << bodyF_orientation_.Yaw()   << std::endl;
-
-    //tf2::Quaternion q;
-    //q.setEuler( bodyF_orientation_.Yaw(),bodyF_orientation_.Pitch(),bodyF_orientation_.Roll());
-    //std::cout << "orientatixyzw = " << q.x() << ", "<< q.y() << ", " << q.z() << ", "<< q.w()<< std::endl;
 
     // Passing from angular vehicle velocity to Euler rates
     Eigen::Matrix3d S;
@@ -418,27 +399,21 @@ void VehicleSimulator::SimulateActuation()
     vehicleSpeed_ = std::sqrt(worldF_velocity_(0) * worldF_velocity_(0) + worldF_velocity_(1) * worldF_velocity_(1));
     double distance_ = vehicleSpeed_ * Ts_;
 
-    //distance_ = 0.0;
-    //double threshold = 1E-3;
-
-    //if( distance_ < threshold ){
-    //    vehiclePos.latitude = vehiclePreviousPos.latitude;
-    //    vehiclePos.longitude = vehiclePreviousPos.longitude;
-    //}
-    //else
     geod_.Direct(vehiclePreviousPos_.latitude, vehiclePreviousPos_.longitude, vehicleTrack_ * 180.0 / M_PI, distance_, vehiclePos_.latitude, vehiclePos_.longitude);
-    //{}
-    //vehiclePos.latitude = vehiclePreviousPos.latitude + worldF_velocity_(0) * Ts_;
-    //vehiclePos.longitude = vehiclePreviousPos.longitude + worldF_velocity_(1) * Ts_;
+
     altitude_ = Pre_altitude_ + worldF_velocity_(2) * Ts_;
 
+    ctb::LatLong2LocalNED(vehiclePos_, altitude_, centroidLocation_, ROVpose_);
+    //ROVpose_(0) = ROVprepose_(0) + worldF_velocity_(0) * Ts_;
+    //ROVpose_(1) = ROVprepose_(1) + worldF_velocity_(1) * Ts_;
+    /*
     ROVpose_(0) = ROVprepose_(0) + worldF_velocity_(0) * Ts_;
     ROVpose_(1) = ROVprepose_(1) + worldF_velocity_(1) * Ts_;
     ROVpose_(2) = ROVprepose_(2) + worldF_velocity_(2) * Ts_;
+    */
 
     if (altitude_ < 0) altitude_ = 0;
     ROVpose_(2) = altitude_;
-    //std::cout << "Ts_ = " << Ts_ << std::endl;
 
     // Integrating the Euler rates to get the new Euler angles and wrapping around 2 PI
     bodyF_orientation_.Roll(std::fmod((previous_bodyF_orientation_.Roll() + rpyEulerRates(0) * Ts_) + 2 * M_PI, 2 * M_PI));
@@ -491,26 +466,26 @@ void VehicleSimulator::SimulateSensors()
     double gpsAltitude;
     ctb::LocalNED2LatLong(worldF_antenna, centroidLocation_, gpsLatlong, gpsAltitude);
 
-    /*gpsMsg_.time = static_cast<double>(now_nanosecs / 1E9);
+    gpsMsg_.time = static_cast<double>(now_nanosecs / 1E9);
     gpsMsg_.track = vehicleTrack_;
     gpsMsg_.speed = vehicleSpeed_;
     gpsMsg_.latitude = gpsLatlong.latitude;
     gpsMsg_.longitude = gpsLatlong.longitude;
     gpsMsg_.altitude = gpsAltitude;
-    gpsMsg_.gpsfixmode = ulisse_msgs::msg::GPSData::MODE3D; //3u
-    */
+    gpsMsg_.gpsfixmode = rov_msgs::msg::GPSData::MODE3D; //3u
+
 
     /////   COMPASS   /////
     std::normal_distribution<double> compassNoiseR(0.0, config_->sensorsNoise.compass_stdd.x());
     std::normal_distribution<double> compassNoiseP(0.0, config_->sensorsNoise.compass_stdd.y());
     std::normal_distribution<double> compassNoiseY(0.0, config_->sensorsNoise.compass_stdd.z());
 
-    /*compassMsg_.stamp.sec = now_stamp_secs;
+    compassMsg_.stamp.sec = now_stamp_secs;
     compassMsg_.stamp.nanosec = now_stamp_nanosecs;
     compassMsg_.orientation.roll = bodyF_orientation_.Roll() + compassNoiseR(generator);
     compassMsg_.orientation.pitch = bodyF_orientation_.Pitch() + compassNoiseP(generator);
     compassMsg_.orientation.yaw = bodyF_orientation_.Yaw() + compassNoiseY(generator);
-    */
+
 
     /////   MAGNETOMETER   /////
     Eigen::Vector3d m = { 23186.6 * 1E-9, 0.0 * 1E-9, 41122.0 * 1E-9 };  // Example of magnetic field at lat long: 44.4056° N, 8.9463° E
@@ -521,27 +496,27 @@ void VehicleSimulator::SimulateSensors()
     std::normal_distribution<double> magnetometerNoiseY(0.0, config_->sensorsNoise.magnetometer_stdd.y());
     std::normal_distribution<double> magnetometerNoiseZ(0.0, config_->sensorsNoise.magnetometer_stdd.z());
 
-    /*magnetometerMsg_.stamp.sec = now_stamp_secs;
+    magnetometerMsg_.stamp.sec = now_stamp_secs;
     magnetometerMsg_.stamp.nanosec = now_stamp_nanosecs;
     magnetometerMsg_.orthogonalstrength[0] = ned_m.x() + magnetometerNoiseX(generator);
     magnetometerMsg_.orthogonalstrength[1] = ned_m.y() + magnetometerNoiseY(generator);
     magnetometerMsg_.orthogonalstrength[2] = ned_m.z() + magnetometerNoiseZ(generator);
-    */
+
 
     /////   IMU   /////
     /// Imu: Orientation
-    //std::normal_distribution<double> orientusNoiseX(0.0, config_->sensorsNoise.orientus_stdd.x());
-    //std::normal_distribution<double> orientusNoiseY(0.0, config_->sensorsNoise.orientus_stdd.y());
-    //std::normal_distribution<double> orientusNoiseZ(0.0, config_->sensorsNoise.orientus_stdd.z());
+    std::normal_distribution<double> orientusNoiseX(0.0, config_->sensorsNoise.orientus_stdd.x());
+    std::normal_distribution<double> orientusNoiseY(0.0, config_->sensorsNoise.orientus_stdd.y());
+    std::normal_distribution<double> orientusNoiseZ(0.0, config_->sensorsNoise.orientus_stdd.z());
 
-    /********imuMsg_.stamp.sec = now_stamp_secs;
+    imuMsg_.stamp.sec = now_stamp_secs;
     imuMsg_.stamp.nanosec = now_stamp_nanosecs;
     Eigen::RotationMatrix bodyF_R_orientus = rml::EulerRPY(config_->bodyF_imu_sensor_pose.AngularVector()).ToRotationMatrix();
     rml::EulerRPY imuF_orientation = Eigen::RotationMatrix(bodyF_orientation_.ToRotationMatrix() * bodyF_R_orientus).ToEulerRPY();
     imuMsg_.orientation.roll = imuF_orientation.Roll() + compassNoiseR(generator);
     imuMsg_.orientation.pitch = imuF_orientation.Pitch() + compassNoiseP(generator);
     imuMsg_.orientation.yaw = imuF_orientation.Yaw() + compassNoiseY(generator);
-    */
+
 
     /// Imu: Linear Velocity
     ///
@@ -560,8 +535,8 @@ void VehicleSimulator::SimulateSensors()
     std::normal_distribution<double> accelerometerNoiseY(0.0, config_->sensorsNoise.accelerometer_stdd.y());
     std::normal_distribution<double> accelerometerNoiseZ(0.0, config_->sensorsNoise.accelerometer_stdd.z());
 
-    //imuMsg_.stamp.sec = now_stamp_secs;
-    //imuMsg_.stamp.nanosec = now_stamp_nanosecs;
+    imuMsg_.stamp.sec = now_stamp_secs;
+    imuMsg_.stamp.nanosec = now_stamp_nanosecs;
     Eigen::Vector6d bodyF_relativeAcceleration;
     Eigen::Vector3d worldF_gravity = { 0.0, 0.0, -9.81 };
     bodyF_relativeAcceleration.segment(0, 3) = bodyF_relativeAcceleration_projected_.segment(0, 3) + worldF_R_bodyF_.transpose() * worldF_gravity;
@@ -572,10 +547,10 @@ void VehicleSimulator::SimulateSensors()
     Eigen::RotationMatrix bodyF_R_imu = rml::EulerRPY(config_->bodyF_imu_sensor_pose.AngularVector()).ToRotationMatrix();
     Eigen::Vector3d imuF_relativeLinearAcceleration = bodyF_R_imu.transpose() * bodyF_relativeAcceleration.LinearVector();
 
-    /*imuMsg_.accelerometer[0] = imuF_relativeLinearAcceleration.x() + accelerometerNoiseX(generator);
+    imuMsg_.accelerometer[0] = imuF_relativeLinearAcceleration.x() + accelerometerNoiseX(generator);
     imuMsg_.accelerometer[1] = imuF_relativeLinearAcceleration.y() + accelerometerNoiseY(generator);
     imuMsg_.accelerometer[2] = imuF_relativeLinearAcceleration.z() + accelerometerNoiseZ(generator);
-    */
+
 
     /// Imu: Gyroscope (raw)
     std::normal_distribution<double> gyroNoiseX(0.0, config_->sensorsNoise.gyro_stdd.x());
@@ -594,62 +569,19 @@ void VehicleSimulator::SimulateSensors()
     bodyF_relativeAngularVelocity(1) = bodyF_relativeVelocity_(4) + bodyF_wavesEffects_(4);
     bodyF_relativeAngularVelocity(2) = bodyF_relativeVelocity_(5);
 
-    //imuMsg_.gyro[0] = bodyF_relativeAngularVelocity(0) + gyroNoiseX(generator) + bx;
-    //imuMsg_.gyro[1] = bodyF_relativeAngularVelocity(1) + gyroNoiseY(generator) + by;
-    //imuMsg_.gyro[2] = bodyF_relativeAngularVelocity(2) + gyroNoiseZ(generator) + bz;
+    imuMsg_.gyro[0] = bodyF_relativeAngularVelocity(0) + gyroNoiseX(generator) + bx;
+    imuMsg_.gyro[1] = bodyF_relativeAngularVelocity(1) + gyroNoiseY(generator) + by;
+    imuMsg_.gyro[2] = bodyF_relativeAngularVelocity(2) + gyroNoiseZ(generator) + bz;
 
     /// Imu: Magnetometer
     ///
     ///
 
-    /////   DVL   /////
-    std::normal_distribution<double> dvlNoiseX(0.0, config_->sensorsNoise.dvl_stdd.x());
-    std::normal_distribution<double> dvlNoiseY(0.0, config_->sensorsNoise.dvl_stdd.y());
-    std::normal_distribution<double> dvlNoiseZ(0.0, config_->sensorsNoise.dvl_stdd.z());
-
-    //dvlMsg_.stamp.sec = now_stamp_secs;
-    //dvlMsg_.stamp.nanosec = now_stamp_nanosecs;
-
-    // Evaluating the rigid body matrix of the DVL w.r.t. the bodyFrame
-    Eigen::Matrix6d bodyF_RBM_dvl = rml::RigidBodyMatrix(config_->bodyF_dvl_sensor_pose.LinearVector());
-    // Evaluating the components of the velocity, in the DVL frame
-    Eigen::Vector6d bodyF_relativeVelocity_dvl = bodyF_RBM_dvl * bodyF_relativeVelocity_;
-    // Evaluating the rotation matrix of the DVL w.r.t to the bodyFrame
-    Eigen::RotationMatrix bodyF_R_dvl = rml::EulerRPY(config_->bodyF_dvl_sensor_pose.AngularVector()).ToRotationMatrix();
-    // Rotating the components according to the sensor positioning
-    Eigen::Vector3d dvlF_relativeLinearVelocity = bodyF_R_dvl.transpose() * bodyF_relativeVelocity_dvl.LinearVector();
-
-    //dvlMsg_.water_tracking[0] = dvlF_relativeLinearVelocity(0) + dvlNoiseX(generator);
-   // dvlMsg_.water_tracking[1] = dvlF_relativeLinearVelocity(1) + dvlNoiseY(generator);
-    //dvlMsg_.water_tracking[2] = dvlF_relativeLinearVelocity(2) + dvlNoiseZ(generator);
-
-    // Projecting back the absolute vehicle velocity in worldFrame onto the bodyFrame
-    Eigen::Vector6d bodyF_absoluteVelocity_ = bodyF_orientation_.ToRotationMatrix().CartesianRotationMatrix().transpose() * worldF_velocity_;
-    // Evaluating the components of the velocity, in the DVL frame
-    Eigen::Vector6d bodyF_absoluteVelocity_dvl = bodyF_RBM_dvl * bodyF_absoluteVelocity_;
-    // Rotating the components according to the sensor positioning
-    Eigen::Vector3d dvlF_absoluteLinearVelocity = bodyF_R_dvl.transpose() * bodyF_absoluteVelocity_dvl.LinearVector();
-
-    //dvlMsg_.bottom_velocity[0] = dvlF_absoluteLinearVelocity(0) + dvlNoiseX(generator);
-    //dvlMsg_.bottom_velocity[1] = dvlF_absoluteLinearVelocity(1) + dvlNoiseY(generator);
-    //dvlMsg_.bottom_velocity[2] = dvlF_absoluteLinearVelocity(2) + dvlNoiseZ(generator);
-
-
-    /////   FOG   /////
-    std::normal_distribution<double> fogNoise(0.0, config_->sensorsNoise.fog_stdd);
-
-    /*fogMsg_.stamp.sec = now_stamp_secs;
-    fogMsg_.stamp.nanosec = now_stamp_nanosecs;
-    fogMsg_.angular_velocity = bodyF_relativeAngularVelocity(2) + fogNoise(generator);
-
-
-    /////   AMBIENT   /////
-    ambsensMsg_.stamp.sec = now_stamp_secs;
-    ambsensMsg_.stamp.nanosec = now_stamp_nanosecs;
-    ambsensMsg_.temperaturectrlbox = 23.0 + (rand() / static_cast<double>(RAND_MAX)) * 2.0;
-    ambsensMsg_.humidityctrlbox = 50.0 + (rand() / static_cast<double>(RAND_MAX)) * 2.0;
-    */
-
+    /////   PRESSURE SENSOR   /////
+    std::normal_distribution<double> pressureNoiseR(0.0, config_->sensorsNoise.compass_stdd.x());
+    pressureMsg_.stamp.sec = now_stamp_secs;
+    pressureMsg_.stamp.nanosec = now_stamp_nanosecs;
+    pressureMsg_.depth = altitude_ + pressureNoiseR(generator);
 
     // Fill the ground truth msg
     groundTruthMsg_.stamp.sec = now_stamp_secs;
@@ -668,6 +600,7 @@ void VehicleSimulator::SimulateSensors()
     groundTruthMsg_.bodyframe_angular_velocity[2] = bodyF_relativeAngularVelocity(2);
     groundTruthMsg_.inertialframe_water_current[0] = worldF_waterVelocity_[0];
     groundTruthMsg_.inertialframe_water_current[1] = worldF_waterVelocity_[1]; // worldF_waterVelocity_[2]??
+    groundTruthMsg_.inertialframe_water_current[2] = worldF_waterVelocity_[2];
     groundTruthMsg_.gyro_bias[0] = bx;
     groundTruthMsg_.gyro_bias[1] = by;
     groundTruthMsg_.gyro_bias[2] = bz;
@@ -689,8 +622,6 @@ void VehicleSimulator::SimulateSensors()
 
     //q.setEuler( bodyF_orientation_.Pitch(), bodyF_orientation_.Roll(), bodyF_orientation_.Yaw()); // i used it
 
-
-
     t_stamp.header.stamp = this->get_clock()->now();
     t_stamp.header.frame_id = "world";
     t_stamp.child_frame_id = "centroid";
@@ -702,58 +633,6 @@ void VehicleSimulator::SimulateSensors()
     t_stamp.transform.rotation.z = 0.0;
     t_stamp.transform.rotation.w = 0.0;
     tf_broadcaster_->sendTransform(t_stamp);
-
-    /*t_stamp_temp.header.stamp = this->get_clock()->now();
-    t_stamp_temp.header.frame_id = "centroid";
-    t_stamp_temp.child_frame_id = "temp";
-    t_stamp_temp.transform.translation.x = t_stamp_temp.transform.translation.x + 0.0001;
-    t_stamp_temp.transform.translation.y = t_stamp_temp.transform.translation.y + 0.0001;
-    t_stamp_temp.transform.translation.z = 0.0;
-    t_stamp_temp.transform.rotation.x = 1.0;
-    t_stamp_temp.transform.rotation.y = 0.0;
-    t_stamp_temp.transform.rotation.z = 0.0;
-    t_stamp_temp.transform.rotation.w = 0.0;
-    tf_broadcaster_->sendTransform(t_stamp_temp);*/
-
-    /*
-    tf2::Quaternion q1;
-    //Eigen::Quaterniond eqq(worldF_R_bodyF_);
-    //tf2::
-    //tf2::quaternionEigenToTF(eq, q);
-    //transform.setRotation(q);
-
-    rml::EulerRPY ori;
-    ori.Roll(0.0);
-    ori.Pitch(0.0);
-    ori.Yaw(0.0);
-    q1.setEuler( ori.Pitch(), ori.Roll() , ori.Yaw());
-
-
-    t_stamp_temp.header.stamp = this->get_clock()->now();
-    t_stamp_temp.header.frame_id = "centroid";
-    t_stamp_temp.child_frame_id = "temp";
-    t_stamp_temp.transform.translation.x = 0.0;
-    t_stamp_temp.transform.translation.y = 1.0;
-    t_stamp_temp.transform.translation.z = 0.0;
-    t_stamp_temp.transform.rotation.x = q1.x();
-    t_stamp_temp.transform.rotation.y = q1.y();
-    t_stamp_temp.transform.rotation.z = q1.z();
-    t_stamp_temp.transform.rotation.w = q1.w();
-    tf_broadcaster_->sendTransform(t_stamp_temp); */
-
-    /*
-    t_stamp_ROV.header.stamp = this->get_clock()->now();
-    t_stamp_ROV.header.frame_id = "world";
-    t_stamp_ROV.child_frame_id = "ROV";
-    t_stamp_ROV.transform.translation.x = vehicle_pos[0];
-    t_stamp_ROV.transform.translation.y = vehicle_pos[1];
-    t_stamp_ROV.transform.translation.z = vehicle_pos[2];
-    */
-    /*
-    t_stamp_ROV.transform.rotation.x = q.x();
-    t_stamp_ROV.transform.rotation.y = q.y();
-    t_stamp_ROV.transform.rotation.z = q.z();
-    t_stamp_ROV.transform.rotation.w = q.w(); */
 
 
     //Eigen::Quaterniond eq1(worldF_R_bodyF_);
@@ -864,7 +743,7 @@ void VehicleSimulator::PublishSensors()
     //appliedMotorRefPub_->publish(appliedMotorRefMsg_);
     //motorsDataPub_->publish(motorsDataMsg_);
 
-    /*if (static_cast<int>(timestamp_count_ / 20) > gpsPubCounter_) {
+    if (static_cast<int>(timestamp_count_ / 20) > gpsPubCounter_) {
         gpsPubCounter_ = static_cast<int>(timestamp_count_ / 20);
         gpsPub_->publish(gpsMsg_);
     }
@@ -879,14 +758,20 @@ void VehicleSimulator::PublishSensors()
         compassPub_->publish(compassMsg_);
     }
 
-    if (static_cast<int>(timestamp_count_ / 20) > ambientPubCounter_) {
-        ambientPubCounter_ = static_cast<int>(timestamp_count_ / 20);
-        ambsensPub_->publish(ambsensMsg_);
-    }
-
     if (static_cast<int>(timestamp_count_ / 20) > magnetometerPubCounter_) {
         magnetometerPubCounter_ = static_cast<int>(timestamp_count_ / 20);
         magnetometerPub_->publish(magnetometerMsg_);
+    }
+
+    if (static_cast<int>(timestamp_count_ / 20) > pressurePubConter_) {
+        pressurePubConter_ = static_cast<int>(timestamp_count_ / 20);
+        pressurePub_->publish(pressureMsg_);
+    }
+    /*
+
+    if (static_cast<int>(timestamp_count_ / 20) > ambientPubCounter_) {
+        ambientPubCounter_ = static_cast<int>(timestamp_count_ / 20);
+        ambsensPub_->publish(ambsensMsg_);
     }
 
     if (static_cast<int>(timestamp_count_ / 20) > dvlPubCounter_) {
@@ -902,52 +787,6 @@ double VehicleSimulator::GetCurrentTimeStamp() const
     return static_cast<double>(now_nanosecs / 1E9);
 }
 
-/*void VehicleSimulator::CommandsHandler(const std::shared_ptr<rmw_request_id_t> request_header,
-                                       const std::shared_ptr<rov_msgs::srv::UserInput::Request> request,
-                                    std::shared_ptr<rov_msgs::srv::UserInput::Response> response)
-{
-    // Create a callback function for when service requests are received.
-
-    (void)request_header;
-    //RCLCPP_INFO(this->get_logger(), "Incoming request: %d", request->motion_type);
-
-    //std::stringstream logg;
-    //logg << "Incoming request: " << request->motion_type;
-
-    //std::stringstream log;
-    if (request->motion_type == rov::inputs::ID::halt) {
-        std::cout << "Received Command Halt" << std::endl;
-    }
-    else if (request->motion_type == rov::inputs::ID::hold) {
-        std::cout << "Received Command Hold" << std::endl;
-    }
-    else if (request->motion_type == rov::inputs::ID::forward) {
-        std::cout << "Received Command Forward" << std::endl;
-    }
-    else if (request->motion_type == rov::inputs::ID::backward) {
-        std::cout << "Received Command Backward" << std::endl;
-    }
-    else if (request->motion_type == rov::inputs::ID::right) {
-        std::cout << "Received Command Right" << std::endl;
-    }
-    else if (request->motion_type == rov::inputs::ID::left) {
-        std::cout << "Received Command Left" << std::endl;
-    }
-    else if (request->motion_type == rov::inputs::ID::up) {
-        std::cout << "Received Command Up" << std::endl;
-    }
-    else if (request->motion_type == rov::inputs::ID::down) {
-        std::cout << "Received Command Down" << std::endl;
-    }
-    else{
-        std::cout << "Received Command Halt" << std::endl;
-    }
-    option = request->motion_type;
-
-    response->res = "good";
-    //RCLCPP_INFO(this->get_logger(), "Service Response: %s", response->res.c_str());
-}
-*/
 
 void VehicleSimulator::ThrustersReferenceCB(const rov_msgs::msg::ThrustersReference::SharedPtr msg)
 {

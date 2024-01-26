@@ -4,7 +4,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
 #include "std_msgs/msg/bool.hpp"
-#include "rov_msgs/srv/user_input.hpp"
+#include "rov_msgs/srv/control_command.hpp"
 #include "rov_msgs/msg/reference_velocities.hpp"
 #include "rov_msgs/msg/vehicle_status.hpp"
 #include <string>
@@ -29,10 +29,11 @@ class ROVController : public rclcpp::Node {
 
     // service
     //rclcpp::Client<rov_msgs::srv::UserInput>::SharedPtr cliUserInput_;
-    rclcpp::Service<rov_msgs::srv::UserInput>::SharedPtr srvUserInput_;
+    rclcpp::Service<rov_msgs::srv::ControlCommand>::SharedPtr srvControlCommand_;
 
     rclcpp::Publisher<rov_msgs::msg::ReferenceVelocities>::SharedPtr  referenceVelocitiesPub_;
     rclcpp::Publisher<rov_msgs::msg::VehicleStatus>::SharedPtr vehicleStatusPub_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr genericLogPub_;
 
     //rclcpp::Client<rov_msgs::srv::UserInput>::SharedPtr client = node->create_client<rov_msgs::srv::UserInput>("user_input");
 
@@ -61,15 +62,15 @@ class ROVController : public rclcpp::Node {
     */
 
     bool LoadConfiguration(std::shared_ptr<KCLConfiguration>& conf);
-
+    void PublishLog(std::string log);
 public:
     ROVController(std::string conf_filename);
     virtual ~ROVController();
     void Run();
     void PublishControl();
     void CommandsHandler(const std::shared_ptr<rmw_request_id_t> request_header,
-                         const std::shared_ptr<rov_msgs::srv::UserInput::Request> request,
-                         std::shared_ptr<rov_msgs::srv::UserInput::Response> response);
+                         const std::shared_ptr<rov_msgs::srv::ControlCommand::Request> request,
+                         std::shared_ptr<rov_msgs::srv::ControlCommand::Response> response);
 
 };
 }

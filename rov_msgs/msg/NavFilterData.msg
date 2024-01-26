@@ -1,0 +1,15 @@
+Time stamp
+LatLongAlt inertialframe_linear_position
+RPY bodyframe_angular_position
+float64[3] bodyframe_linear_velocity
+float64[3] bodyframe_angular_velocity
+float64[3] inertialframe_water_current
+float64[3] gyro_bias
+float64 n_p
+float64 n_s
+float64[] covariance_estimation_diag
+bool gps_received
+bool imu_received
+bool compass_received
+bool magnetometer_received
+bool pressure_received

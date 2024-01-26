@@ -8,8 +8,8 @@
 #include "rclcpp/rclcpp.hpp"
 #include "ctrl_toolbox/HelperFunctions.h"
 #include "ctrl_toolbox/pid/DigitalPID.h"
-#include "surface_vehicle_model/surfacevehiclemodel.hpp"
-#include "ulisse_msgs/msg/task_status.hpp"
+//#include "surface_vehicle_model/surfacevehiclemodel.hpp"
+//#include "ulisse_msgs/msg/task_status.hpp"
 
 #include "underwater_vehicle_model/underwater_vehicle.hpp"
 //#include "rov_msgs/
@@ -28,11 +28,11 @@ struct ControlData {
     ControlData() : radioControllerEnabled(false) {}
 };
 
-struct TasksInfo {
+//struct TasksInfo {
 
-    std::shared_ptr<tpik::Task> task;
-    rclcpp::Publisher<ulisse_msgs::msg::TaskStatus>::SharedPtr taskPub;
-};
+//    std::shared_ptr<tpik::Task> task;
+//    rclcpp::Publisher<ulisse_msgs::msg::TaskStatus>::SharedPtr taskPub;
+//};
 
 enum class ControlMode : int {
     ThrusterMapping,
@@ -59,8 +59,7 @@ struct KCLConfiguration {
 
     bool ConfigureFromFile(libconfig::Config& confObj) //noexcept(false)
     {
-        //const libconfig::Setting& root = confObj.getRoot();
-        /*
+
         if (!ctb::GetParam(confObj, goToHoldAfterMove, "goToHoldAfterMove"))
             return false;
         if (!ctb::GetParam(confObj, posAcceptanceRadius, "posAcceptanceRadius"))
@@ -71,9 +70,9 @@ struct KCLConfiguration {
             return false;
         if (!ctb::GetParamVector(confObj, saturationMin, "saturationMin"))
             return false;
-        if (!ctb::GetParam(confObj, rovSpeed, "ROVvelocity"))
+        if (!ctb::GetParam(confObj, rovSpeed, "rovVelocity"))
             return false;
-        */
+
         return true;
     }
 
@@ -301,4 +300,4 @@ struct DCLConfiguration {
 };
 }
 
-#endif //  ULISSE_CTRL_DATA_STRUCTS_HPP
+#endif //  ROV_CTRL_DATA_STRUCTS_HPP

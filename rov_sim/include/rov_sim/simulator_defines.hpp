@@ -39,6 +39,7 @@ struct SensorsNoise {
     Eigen::Vector3d dvl_stdd;
     Eigen::Vector3d orientus_stdd;
     double fog_stdd;
+    double pressure_stdd;
 
     SinusoidalWave bx, by, bz;
 
@@ -59,6 +60,8 @@ struct SensorsNoise {
         if (!ctb::GetParamVector(confObj, orientus_stdd, "imu_orientus_stdd"))
             return false;
         if (!ctb::GetParam(confObj, fog_stdd, "fog_stdd"))
+            return false;
+        if (!ctb::GetParam(confObj, pressure_stdd, "pressure_stdd"))
             return false;
 
         const libconfig::Setting& gyro_bias = confObj["gyro_bias"];

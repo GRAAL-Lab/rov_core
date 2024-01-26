@@ -32,21 +32,23 @@ ROVController::ROVController(std::string conf_filename)
     //cliUserInput_ = this->create_client<rov_msgs::srv::UserInput>(rov_msgs::topicnames::user_input_service);
 
     // Control Publisher
+    genericLogPub_ = this->create_publisher<std_msgs::msg::String>("/rov/log/generic", 10);
     vehicleStatusPub_ = this->create_publisher<rov_msgs::msg::VehicleStatus>(rov_msgs::topicnames::vehicle_status, 10);
     referenceVelocitiesPub_ = this->create_publisher<rov_msgs::msg::ReferenceVelocities>(rov_msgs::topicnames::reference_velocities, 10);
 
     // Service
-    srvUserInput_ = this->create_service<rov_msgs::srv::UserInput>(rov_msgs::topicnames::user_input_service, std::bind(&ROVController::CommandsHandler, this, _1, _2, _3));
-
+    //srvUserInput_ = this->create_service<rov_msgs::srv::command>(rov_msgs::topicnames::user_input_service, std::bind(&ROVController::CommandsHandler, this, _1, _2, _3));
+    srvControlCommand_ = this->create_service<rov_msgs::srv::ControlCommand>(rov_msgs::topicnames::control_cmd_service, std::bind(&ROVController::CommandsHandler, this, _1, _2, _3));
     // load config file
     // Setup Params for Tasks and iCAT
+    conf_ = std::make_shared<KCLConfiguration>();
     if (!LoadConfiguration(conf_)) {
         std::cerr << "Failed to load KCL configuration from file" << std::endl;
         return;
     }
 
     current_state = rov::states::ID::hold;
-    std::cout << "initial state: " << rov::states::ID::hold << std::endl;
+    std::cout << "initial state: " << current_state << std::endl;
 
     // Main function timer
     //int msRunPeriod = 1.0 / (conf_->controlLoopRate) * 1000;
@@ -115,7 +117,9 @@ bool ROVController::LoadConfiguration(std::shared_ptr<KCLConfiguration>& conf)
         std::cerr << "Parse error at " << pex.getFile() << ":" << pex.getLine() << " - " << pex.getError() << std::endl;
         return -1;
     }
+
     std::cout << "reading configuration done " << std::endl;
+
     if (!conf->ConfigureFromFile(confObj)) {
         std::cerr << "Failed to load KCL configuration" << std::endl;
         return false;
@@ -167,6 +171,12 @@ bool ROVController::LoadConfiguration(std::shared_ptr<KCLConfiguration>& conf)
     return true;
 }
 
+void ROVController::PublishLog(std::string log)
+{
+    std_msgs::msg::String genericLogPub_msg;
+    genericLogPub_msg.data = log;
+    genericLogPub_->publish(genericLogPub_msg);
+}
 
 void ROVController::Run(){
     //std::cout << "Forward:8, Backward:2, Left:4, Right:6, Up:9, Down:3 " << std::endl;
@@ -225,63 +235,43 @@ void ROVController::PublishControl(){
 }
 
 void ROVController::CommandsHandler(const std::shared_ptr<rmw_request_id_t> request_header,
-                                       const std::shared_ptr<rov_msgs::srv::UserInput::Request> request,
-                                       std::shared_ptr<rov_msgs::srv::UserInput::Response> response)
+                                       const std::shared_ptr<rov_msgs::srv::ControlCommand::Request> request,
+                                       std::shared_ptr<rov_msgs::srv::ControlCommand::Response> response)
 {
     // Create a callback function for when service requests are received.
 
     (void)request_header;
     //RCLCPP_INFO(this->get_logger(), "Incoming request: %d", request->motion_type);
-
+    std::stringstream logg;
+    logg << "Incoming request: " << request->command_type.c_str();
+    PublishLog(logg.str().c_str());
     //std::stringstream logg;
     //logg << "Incoming request: " << request->motion_type;
 
     //std::stringstream log;
-    if (request->motion_type == rov::inputs::ID::halt) {
+    if (request->command_type == rov::commands::ID::halt) {
         std::cout << "Received Command Halt" << std::endl;
         current_state = rov::states::ID::halt;
+        PublishLog("Received Command Halt");
     }
-    else if (request->motion_type == rov::inputs::ID::hold) {
+    else if (request->command_type == rov::commands::ID::hold) {
         std::cout << "Received Command Hold" << std::endl;
         current_state = rov::states::ID::hold;
     }
-    else if (request->motion_type == rov::inputs::ID::forward) {
-        std::cout << "Received Command Forward" << std::endl;
-        current_state = rov::states::ID::forward;
+    else if (request->command_type == rov::commands::ID::latlongalt) {
+        std::cout << "Received Command MoveTo" << std::endl;
+        current_state = rov::states::ID::latlongalt;
     }
-    else if (request->motion_type == rov::inputs::ID::backward) {
-        std::cout << "Received Command Backward" << std::endl;
-        current_state = rov::states::ID::backward;
+    else if (request->command_type == rov::commands::ID::velocity) {
+        std::cout << "Received Command VelocityControl" << std::endl;
+        current_state = rov::states::ID::velocity;
     }
-    else if (request->motion_type == rov::inputs::ID::right) {
-        std::cout << "Received Command Right" << std::endl;
-        current_state = rov::states::ID::right;
-    }
-    else if (request->motion_type == rov::inputs::ID::left) {
-        std::cout << "Received Command Left" << std::endl;
-        current_state = rov::states::ID::left;
-    }
-    else if (request->motion_type == rov::inputs::ID::up) {
-        std::cout << "Received Command Up" << std::endl;
-        current_state = rov::states::ID::up;
-    }
-    else if (request->motion_type == rov::inputs::ID::down) {
-        std::cout << "Received Command Down" << std::endl;
-        current_state = rov::states::ID::down;
-    }
-    else if (request->motion_type == rov::inputs::ID::turn_left) {
-        std::cout << "Received Command Turn Left" << std::endl;
-        current_state = rov::states::ID::turn_left;
-    }
-    else if (request->motion_type == rov::inputs::ID::turn_right) {
-        std::cout << "Received Command Turn Right" << std::endl;
-        current_state = rov::states::ID::turn_right;
-    }
+
     else{
         std::cout << "Received Command Halt" << std::endl;
         current_state = rov::states::ID::halt;
     }
-    option = request->motion_type;
+    //option = request->command_type;
 
     response->res = "good";
     //RCLCPP_INFO(this->get_logger(), "Service Response: %s", response->res.c_str());
