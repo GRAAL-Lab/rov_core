@@ -2,4 +2,6 @@ Time stamp
 float64 desired_surge
 float64 desired_sway
 float64 desired_heave
+float64 desired_roll_rate
+float64 desired_pitch_rate
 float64 desired_yaw_rate

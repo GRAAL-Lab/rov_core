@@ -6,7 +6,7 @@
 #include "ctrl_toolbox/pid/DigitalPID.h"
  /*
 #include "ulisse_msgs/msg/dynamic_pid_control.hpp"
-#include "ulisse_msgs/msg/nav_filter_data.hpp"
+
 
 #include "ulisse_msgs/msg/simulated_velocity_sensor.hpp"
 #include "ulisse_msgs/msg/thruster_mapping_control.hpp"
@@ -20,7 +20,7 @@
 #include "ulisse_ctrl/ulisse_defines.hpp"
 */
 
-
+#include "rov_msgs/msg/nav_filter_data.hpp"
 #include "surface_vehicle_model/surfacevehiclemodel.hpp"
 
 #include "ulisse_msgs/terminal_utils.hpp"
@@ -31,7 +31,7 @@
 #include "rov_msgs/msg/thrusters_reference.hpp"
 #include "rov_msgs/msg/dynamic_pid_control.hpp"
 #include "rov_msgs/msg/vehicle_status.hpp"
- #include "rov_msgs/msg/forces.hpp"
+#include "rov_msgs/msg/forces.hpp"
 #include "underwater_vehicle_model/underwater_vehicle.hpp"
 #include "rov_ctrl/ctrl_data_structs.hpp"
 #include "rov_msgs/srv/user_input.hpp"
@@ -42,7 +42,7 @@ class DynamicRovController : public rclcpp::Node {
 
     double sampleTime_;
     std::string confFileName_;
-    //ulisse_msgs::msg::NavFilterData filterData;
+    rov_msgs::msg::NavFilterData filterData;
     rov_msgs::msg::ReferenceVelocities referenceVelocities;
     rov_msgs::msg::VehicleStatus vehicleStatus;
     rov_msgs::msg::Forces vehicleForces;
@@ -53,7 +53,7 @@ class DynamicRovController : public rclcpp::Node {
 
     std::shared_ptr<DCLConfiguration> dcl_conf;// = std::make_shared<DCLConfiguration>();
 
-    // ulisse model
+    // rov model
     //SurfaceVehicleModel ulisseModel;
     UnderwaterVehicle rovModel_;
     Eigen::MatrixXd rov_allocationMatrix;
@@ -61,7 +61,7 @@ class DynamicRovController : public rclcpp::Node {
     //rclcpp::Service<ulisse_msgs::srv::ResetConfiguration>::SharedPtr srvResetConf_;
 
     //Subscribers
-    //rclcpp::Subscription<ulisse_msgs::msg::NavFilterData>::SharedPtr filterSub_;
+    rclcpp::Subscription<rov_msgs::msg::NavFilterData>::SharedPtr filterSub_;
     //rclcpp::Subscription<ulisse_msgs::msg::VehicleStatus>::SharedPtr vehicleStatusSub_;
     rclcpp::Subscription<rov_msgs::msg::ReferenceVelocities>::SharedPtr referenceVelocitiesSub_;
     rclcpp::Subscription<rov_msgs::msg::VehicleStatus>::SharedPtr vehicleStatusSub_;
@@ -83,23 +83,24 @@ class DynamicRovController : public rclcpp::Node {
     //ulisse_msgs::msg::SimulatedVelocitySensor simulatedVelocitySensor;
 
     //feedback from nav filter
-    //double surgeFbk = 0.0;
+    //double surgeFbk = 0.0, swayFbk = 0.0, heaveFbk = 0.0;
     //double yawRateFbk = 0.0;
 
-    //double motorLeft = 0.0, motorRight = 0.0;
+    double motorOne = 0.0, motorTwo = 0.0, motorThree = 0.0, motorFour = 0.0,
+        motorFive = 0.0, motorSix = 0.0, motorSeven = 0.0, motorEight = 0.0;
 
     //Surge pid for thrusterMapping control (TM)
     //ctb::DigitalPID pidSurgeTM;
 
     //Pid for classic pid control (CP)
-    ctb::DigitalPID pidYawRateCP;
-    ctb::DigitalPID pidSurgeCP;
+    ctb::DigitalPID pidSurgeCP_, pidSwayCP_, pidHeaveCP_;
+    ctb::DigitalPID pidRollRateCP_, pidPitchRateCP_, pidYawRateCP_;
 
     //Pid for computed torque control (CT)
     //ctb::DigitalPID pidYawRateCT;
     //ctb::DigitalPID pidSurgeCT;
 
-    //Eigen::Vector6d tau = Eigen::Vector3d::Zero();
+    Eigen::Vector6d tau = Eigen::Vector6d::Zero();
 
     //void ResetConfHandler(const std::shared_ptr<rmw_request_id_t> request_header,
     //    const std::shared_ptr<ulisse_msgs::srv::ResetConfiguration::Request> request,
@@ -108,13 +109,15 @@ class DynamicRovController : public rclcpp::Node {
     bool LoadDclConfiguration(std::shared_ptr<DCLConfiguration> conf, std::string filename);
 
     //void ThrusterMappingInizialization(std::shared_ptr<DCLConfiguration> conf, double sampleTime, ctb::DigitalPID& pid);
-    void ClassicPidControlInizialization(std::shared_ptr<DCLConfiguration> conf, double sampleTime, ctb::DigitalPID& pidSurge, ctb::DigitalPID& pidYawRate);
+    void ClassicPidControlInizialization(std::shared_ptr<DCLConfiguration> conf, double sampleTime,
+                                         ctb::DigitalPID& pidSurge, ctb::DigitalPID& pidSway, ctb::DigitalPID& pidHeave,
+                                         ctb::DigitalPID& pidRollRate, ctb::DigitalPID& pidPitchRate, ctb::DigitalPID& pidYawRate);
 
     void MoveByForce(const Eigen::Vector6d &force, Eigen::VectorXd &volt);
 
     //void ComputedTorqueControlInizialization(std::shared_ptr<DCLConfiguration> conf, double sampleTime, ctb::DigitalPID& pidSurge, ctb::DigitalPID& pidYawRate);
 
-    //void FilterDataCB(const ulisse_msgs::msg::NavFilterData::SharedPtr msg);
+    void FilterDataCB(const rov_msgs::msg::NavFilterData::SharedPtr msg);
     void ReferenceVelocitiesCB(const rov_msgs::msg::ReferenceVelocities::SharedPtr msg);
     void VehicleStatusCB(const rov_msgs::msg::VehicleStatus::SharedPtr msg);
     void VehicleForcesCB(const rov_msgs::msg::Forces::SharedPtr msg);

@@ -218,6 +218,10 @@ void ROVController::PublishControl(){
     vehicleStatusMsg.vehicle_state = current_state;
     vehicleStatusPub_->publish(vehicleStatusMsg);
 
+    referenceVelocities_.stamp.sec = now_stamp_secs;
+    referenceVelocities_.stamp.nanosec = now_stamp_nanosecs;
+    referenceVelocitiesPub_->publish(referenceVelocities_);
+
     // Publish reference velocities, for the DCL, only if we are not in HALT state
     /*
     if (.GetCurrentStateName() != rov::states::ID::halt) {
@@ -265,6 +269,13 @@ void ROVController::CommandsHandler(const std::shared_ptr<rmw_request_id_t> requ
     else if (request->command_type == rov::commands::ID::velocity) {
         std::cout << "Received Command VelocityControl" << std::endl;
         current_state = rov::states::ID::velocity;
+        referenceVelocities_.desired_surge = request->sh_cmd.speed[0];
+        referenceVelocities_.desired_sway = request->sh_cmd.speed[1];
+        referenceVelocities_.desired_heave = request->sh_cmd.speed[2];
+        referenceVelocities_.desired_roll_rate = request->sh_cmd.heading;
+        referenceVelocities_.desired_pitch_rate = request->sh_cmd.heading;
+        referenceVelocities_.desired_yaw_rate = request->sh_cmd.heading;
+        //referenceVelocitiesPub_->publish(referenceVelocities_);
     }
 
     else{

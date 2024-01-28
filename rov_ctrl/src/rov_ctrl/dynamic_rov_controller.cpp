@@ -3,7 +3,6 @@
 #include <jsoncpp/json/json.h>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 
-//#include "ulisse_ctrl/ulisse_defines.hpp"
 //#include "ulisse_ctrl/configuration.hpp"
 
 //#include "ulisse_msgs/terminal_utils.hpp"
@@ -21,15 +20,11 @@ namespace rov {
 DynamicRovController::DynamicRovController(std::string file_name)
     : Node("dynamic_control_node")
 {
-
-
     confFileName_ = file_name;
 
     //Subscribers
-    //filterSub_ = this->create_subscription<ulisse_msgs::msg::NavFilterData>(ulisse_msgs::topicnames::nav_filter_data, 10,
-    //    std::bind(&DynamicVehicleController::FilterDataCB, this, _1));
-    //vehicleStatusSub_ = this->create_subscription<ulisse_msgs::msg::VehicleStatus>(ulisse_msgs::topicnames::vehicle_status, 10,
-    //    std::bind(&DynamicVehicleController::VehicleStatusCB, this, _1));
+    filterSub_ = this->create_subscription<rov_msgs::msg::NavFilterData>(rov_msgs::topicnames::nav_filter_data, 10,
+        std::bind(&DynamicRovController::FilterDataCB, this, _1));
     referenceVelocitiesSub_ = this->create_subscription<rov_msgs::msg::ReferenceVelocities>(rov_msgs::topicnames::reference_velocities, 10,
         std::bind(&DynamicRovController::ReferenceVelocitiesCB, this, _1));
     vehicleStatusSub_ = this->create_subscription<rov_msgs::msg::VehicleStatus>(rov_msgs::topicnames::vehicle_status, 10,
@@ -61,16 +56,26 @@ DynamicRovController::DynamicRovController(std::string file_name)
     std::cout << "Qparam =" << rovModel_.params.Q << std::endl;
     std::cout << "Tparam =" << rovModel_.params.T << std::endl;
     std::cout << "Kparam =" << rovModel_.params.K<< std::endl;
+
+    if(rovModel_.params.heavyConf){
+        rov_allocationMatrix.resize(6,8);
+        thruster_voltage.resize(8,1);
+    }
+    else {
+        rov_allocationMatrix.resize(6,6);
+        thruster_voltage.resize(6,1);
+    }
+    //rov_allocationMatrix = T*K*Q;
     rov_allocationMatrix = rovModel_.params.T * rovModel_.params.K * rovModel_.params.Q;
 
     //Controller inizialization
-    ClassicPidControlInizialization(dcl_conf, sampleTime_, pidSurgeCP, pidYawRateCP);
-
+    //ClassicPidControlInizialization(dcl_conf, sampleTime_, pidSurgeCP, pidYawRateCP);
 
     if (dcl_conf->ctrlMode == ControlMode::ThrusterMapping) {
         //ThrusterMappingInizialization(dcl_conf, sampleTime_, pidSurgeTM);
     } else if (dcl_conf->ctrlMode == ControlMode::ClassicPIDControl) {
-        ClassicPidControlInizialization(dcl_conf, sampleTime_, pidSurgeCP, pidYawRateCP);
+        ClassicPidControlInizialization(dcl_conf, sampleTime_, pidSurgeCP_,pidSwayCP_, pidHeaveCP_,
+                                        pidRollRateCP_, pidPitchRateCP_, pidYawRateCP_);
     } else {
         //ComputedTorqueControlInizialization(dcl_conf, sampleTime_, pidSurgeCT, pidYawRateCT);
     }
@@ -81,7 +86,7 @@ DynamicRovController::DynamicRovController(std::string file_name)
 
     // Main function timer   
     int msRunPeriod = 1.0/(dcl_conf->controlLoopRate) * 1000;
-    //std::cout << "Controller Rate: " << rate << "Hz" << std::endl;
+    std::cout << "Controller Rate: " << dcl_conf->controlLoopRate << "Hz" << std::endl;
     runTimer_ = this->create_wall_timer(std::chrono::milliseconds(msRunPeriod), std::bind(&DynamicRovController::Run, this));
 
 }
@@ -95,20 +100,35 @@ void DynamicRovController::Run()
 {
 
     // Evaluating the total surge, taking into account the water current
-    //Eigen::Rotation2D<double> wRb = Eigen::Rotation2D<double>(filterData.bodyframe_angular_position.yaw);
-    //Eigen::Vector2d water_current_b = wRb.inverse() * Eigen::Vector2d(filterData.inertialframe_water_current.data());
+    Eigen::RotationMatrix Rz, Ry, Rx;
+    Rz << cos(filterData.bodyframe_angular_position.yaw), -sin(filterData.bodyframe_angular_position.yaw), 0,
+        sin(filterData.bodyframe_angular_position.yaw), cos(filterData.bodyframe_angular_position.yaw), 0,
+        0, 0, 1;
 
-    /*
-    //double absSurgeFbk = filterData.bodyframe_linear_velocity[0] + water_current_b[0];   // ?! è la velocità relativa all'acqua?
-    //double relSurgeFbk = filterData.bodyframe_linear_velocity[0];
-    //double yawRateFbk = filterData.bodyframe_angular_velocity[2];
-    */
-    //double absSurgeFbk;// = filterData.bodyframe_linear_velocity[0] + water_current_b[0];   // ?! è la velocità relativa all'acqua?
-    //double relSurgeFbk;
-    //double yawRateFbk;
+    Ry << cos(filterData.bodyframe_angular_position.pitch), 0, sin(filterData.bodyframe_angular_position.pitch),
+        0, 1, 0,
+        -sin(filterData.bodyframe_angular_position.pitch), 0, cos(filterData.bodyframe_angular_position.pitch);
+
+    Rx << 1, 0, 0,
+        0, cos(filterData.bodyframe_angular_position.roll), -sin(filterData.bodyframe_angular_position.roll),
+        0, sin(filterData.bodyframe_angular_position.roll), cos(filterData.bodyframe_angular_position.roll);
+
+    Eigen::RotationMatrix worldF_R_bodyF_ = Rz * Ry * Rx;
+    Eigen::RotationMatrix bodyF_R_worldF = worldF_R_bodyF_.transpose();
+
+    Eigen::Vector3d water_current_b = bodyF_R_worldF * Eigen::Vector3d(filterData.inertialframe_water_current.data());
 
 
+    double absSurgeFbk = filterData.bodyframe_linear_velocity[0] + water_current_b[0];   // ?! è la velocità relativa all'acqua?
+    double relSurgeFbk = filterData.bodyframe_linear_velocity[0];
+    double absSwayFbk = filterData.bodyframe_linear_velocity[1] + water_current_b[1];   // ?! è la velocità relativa all'acqua?
+    double relSwayFbk = filterData.bodyframe_linear_velocity[1];
+    double absHeaveFbk = filterData.bodyframe_linear_velocity[2] + water_current_b[2];   // ?! è la velocità relativa all'acqua?
+    double relHeaveFbk = filterData.bodyframe_linear_velocity[2];
 
+    double rollRateFbk = filterData.bodyframe_angular_velocity[0];
+    double pitchRateFbk = filterData.bodyframe_angular_velocity[1];
+    double yawRateFbk = filterData.bodyframe_angular_velocity[2];
 
     if (vehicleStatus.vehicle_state != rov::states::ID::halt) {
         //ThrusterMapping mode
@@ -116,7 +136,9 @@ void DynamicRovController::Run()
             //std::cout << "ControlMode hold" << std::endl;
             if(vehicleStatus.vehicle_state == rov::states::ID::hold){
                 Eigen::Vector6d tau; tau.setZero();
+                //std::cout << "MoveByForce before" << std::endl;
                 MoveByForce(tau,thruster_voltage);
+                //std::cout << "MoveByForce after" << std::endl;
                 motion_direction = rov::inputs::ID::hold;
                 //std::cout << "ControlMode hold" << std::endl;
             }
@@ -167,97 +189,37 @@ void DynamicRovController::Run()
                 } break;
                 }
             }
-            /*
-            else if(vehicleStatus.vehicle_state == rov::states::ID::forward){
-                Eigen::Vector6d tau; tau.setZero();
-                tau[0] = 10.0;
-                MoveByForce(tau,thruster_voltage);
-            }
-            else if(vehicleStatus.vehicle_state == rov::states::ID::backward){
-                Eigen::Vector6d tau; tau.setZero();
-                tau[0] = -10.0;
-                MoveByForce(tau,thruster_voltage);
-            }
-            else if(vehicleStatus.vehicle_state == rov::states::ID::up){
-                Eigen::Vector6d tau; tau.setZero();
-                tau[2] = -10.0;
-                MoveByForce(tau,thruster_voltage);
-            }
-            else if(vehicleStatus.vehicle_state == rov::states::ID::down){
-                Eigen::Vector6d tau; tau.setZero();
-                tau[2] = 10.0;
-                MoveByForce(tau,thruster_voltage);
-            }
-            else if(vehicleStatus.vehicle_state == rov::states::ID::turn_left){
-                Eigen::Vector6d tau; tau.setZero();
-                tau[5] = -0.1;
-                MoveByForce(tau,thruster_voltage);
-            }
-            else if(vehicleStatus.vehicle_state == rov::states::ID::turn_right){
-                Eigen::Vector6d tau; tau.setZero();
-                tau[5] = 0.1;
-                MoveByForce(tau,thruster_voltage);
-            }
-            else if(vehicleStatus.vehicle_state == rov::states::ID::left){
-                Eigen::Vector6d tau; tau.setZero();
-                tau[1] = -10.0;
-                MoveByForce(tau,thruster_voltage);
-            }
-            else if(vehicleStatus.vehicle_state == rov::states::ID::right){
-                Eigen::Vector6d tau; tau.setZero();
-                tau[1] = 10.0;
-                MoveByForce(tau,thruster_voltage);
-            }*/
 
-            /*
-            else if (request->motion_type == rov::inputs::ID::forward) {
-                std::cout << "Received Command Forward" << std::endl;
-                current_state = rov::states::ID::forward;
-            }
-            else if (request->motion_type == rov::inputs::ID::backward) {
-                std::cout << "Received Command Backward" << std::endl;
-                current_state = rov::states::ID::backward;
-            }
-            else if (request->motion_type == rov::inputs::ID::right) {
-                std::cout << "Received Command Right" << std::endl;
-                current_state = rov::states::ID::right;
-            }
-            else if (request->motion_type == rov::inputs::ID::left) {
-                std::cout << "Received Command Left" << std::endl;
-                current_state = rov::states::ID::left;
-            }
-            else if (request->motion_type == rov::inputs::ID::up) {
-                std::cout << "Received Command Up" << std::endl;
-                current_state = rov::states::ID::up;
-            }
-            else if (request->motion_type == rov::inputs::ID::down) {
-                std::cout << "Received Command Down" << std::endl;
-                current_state = rov::states::ID::down;
-            }
-            else if (request->motion_type == rov::inputs::ID::turn_left) {
-                std::cout << "Received Command Turn Left" << std::endl;
-                current_state = rov::states::ID::turn_left;
-            }
-            else if (request->motion_type == rov::inputs::ID::turn_right) {
-                std::cout << "Received Command Turn Right" << std::endl;
-                current_state = rov::states::ID::turn_right;
-            }
-            */
 
         } else if (dcl_conf->ctrlMode == ControlMode::ClassicPIDControl) {
             //Dynamic Pids
-            /*
+
             Eigen::Vector6d feedbackVel = Eigen::Vector6d::Zero();
 
-            tau = { pidSurgeCP.Compute(referenceVelocities.desired_surge, absSurgeFbk), pidYawRateCP.Compute(referenceVelocities.desired_yaw_rate, yawRateFbk) };
+            // different tau for normal configuration
+            // tau for heavy configuration
+
+            tau << pidSurgeCP_.Compute(referenceVelocities.desired_surge, absSurgeFbk),
+                   pidSwayCP_.Compute(referenceVelocities.desired_sway, absSwayFbk),
+                   pidHeaveCP_.Compute(referenceVelocities.desired_heave, absHeaveFbk),
+                   pidRollRateCP_.Compute(referenceVelocities.desired_roll_rate, rollRateFbk),
+                   pidPitchRateCP_.Compute(referenceVelocities.desired_pitch_rate, pitchRateFbk),
+                   pidYawRateCP_.Compute(referenceVelocities.desired_yaw_rate, yawRateFbk);
 
             feedbackVel(0) = absSurgeFbk;
+            feedbackVel(1) = absSwayFbk;
+            feedbackVel(2) = absHeaveFbk;
+            feedbackVel(3) = rollRateFbk;
+            feedbackVel(4) = pitchRateFbk;
             feedbackVel(5) = yawRateFbk;
-            double outleft, outright;
 
-            Eigen::Vector2d forces = ulisseModel.ThusterAllocation(tau);
-            ulisseModel.InverseMotorsEquations(feedbackVel, forces, outleft, outright);
-            ulisseModel.ThrustersSaturation(outleft, outright, -dcl_conf->thrusterPercLimit, dcl_conf->thrusterPercLimit, thrustersReference.left_percentage, thrustersReference.right_percentage);
+            //double outOne, outTwo, outThree, outFour, outFive, outSix, outSeven, outEight;
+
+            //Eigen::VectorXd volts;
+
+            thruster_voltage = rovModel_.ThusterAllocation(tau);
+            //ulisseModel.InverseMotorsEquations(feedbackVel, forces, outleft, outright);
+            rovModel_.ThrustersSaturation(thruster_voltage, 1.0);
 
             //Fill the classic dynamic pid contol msg
             auto t_now_ = std::chrono::system_clock::now();
@@ -265,22 +227,37 @@ void DynamicRovController::Run()
             classicPidControlMsg.stamp.sec = static_cast<unsigned int>(now_nanosecs / static_cast<int>(1E9));
             classicPidControlMsg.stamp.nanosec = static_cast<unsigned int>(now_nanosecs % static_cast<int>(1E9));
             classicPidControlMsg.desired_surge = referenceVelocities.desired_surge;
+            classicPidControlMsg.desired_sway = referenceVelocities.desired_sway;
+            classicPidControlMsg.desired_heave = referenceVelocities.desired_heave;
             classicPidControlMsg.feedback_surge = absSurgeFbk;
-            classicPidControlMsg.out_pid_surge = pidSurgeCP.GetOutput();
+            classicPidControlMsg.feedback_sway = absSwayFbk;
+            classicPidControlMsg.feedback_heave = absHeaveFbk;
+            classicPidControlMsg.out_pid_surge = pidSurgeCP_.GetOutput();
+            classicPidControlMsg.out_pid_sway = pidSwayCP_.GetOutput();
+            classicPidControlMsg.out_pid_heave = pidHeaveCP_.GetOutput();
+            classicPidControlMsg.desired_roll_rate = referenceVelocities.desired_roll_rate;
+            classicPidControlMsg.desired_pitch_rate = referenceVelocities.desired_yaw_rate;
             classicPidControlMsg.desired_yaw_rate = referenceVelocities.desired_yaw_rate;
+            classicPidControlMsg.feedback_roll_rate = rollRateFbk;
+            classicPidControlMsg.feedback_pitch_rate = pitchRateFbk;
             classicPidControlMsg.feedback_yaw_rate = yawRateFbk;
-            classicPidControlMsg.out_pid_yaw_rate = pidYawRateCP.GetOutput();
-            classicPidControlMsg.forces = { forces[0], forces[1] };
-            classicPidControlMsg.tau = { tau[0], tau[1] };
-            classicPidControlMsg.motor_percentage.left_percentage = outleft;
-            classicPidControlMsg.motor_percentage.right_percentage = outright;
+            classicPidControlMsg.out_pid_roll_rate = pidRollRateCP_.GetOutput();
+            classicPidControlMsg.out_pid_pitch_rate = pidPitchRateCP_.GetOutput();
+            classicPidControlMsg.out_pid_yaw_rate = pidYawRateCP_.GetOutput();
+
+            classicPidControlMsg.tau = { tau[0], tau[1], tau[2], tau[3],tau[4], tau[5]};
+            classicPidControlMsg.motor_percentage.first_percentage = thruster_voltage[0];
+            classicPidControlMsg.motor_percentage.second_percentage = thruster_voltage[1];
+            classicPidControlMsg.motor_percentage.third_percentage = thruster_voltage[2];
+            classicPidControlMsg.motor_percentage.forth_percentage = thruster_voltage[3];
+            classicPidControlMsg.motor_percentage.fifth_percentage = thruster_voltage[4];
+            classicPidControlMsg.motor_percentage.sixth_percentage = thruster_voltage[5];
+            if(rovModel_.params.heavyConf){
+                classicPidControlMsg.motor_percentage.seventh_percentage = thruster_voltage[6];
+                classicPidControlMsg.motor_percentage.eighth_percentage = thruster_voltage[7];
+            }
 
             classicPidControlPub_->publish(classicPidControlMsg);
-
-            //fill the feedback for the nav filter    <----------- CHECK TODO
-            //simulatedVelocitySensor.water_relative_surge = referenceVelocities.desired_surge;
-            //simulatedVelocitySensorPub_->publish(simulatedVelocitySensor);
-            */
 
         } /*else if (dcl_conf->ctrlMode == ControlMode::ComputedTorque) {
 
@@ -326,6 +303,8 @@ void DynamicRovController::Run()
             simulatedVelocitySensor.water_relative_surge = referenceVelocities.desired_surge;
             simulatedVelocitySensorPub_->publish(simulatedVelocitySensor);
         }*/
+        else{}
+
         rovModel_.ThrustersSaturation(thruster_voltage, 1.0);
         //std::cout << "thrusterVoltage " << thruster_voltage <<std::endl;
         thrustersReference.first_percentage = thruster_voltage[0];
@@ -376,6 +355,7 @@ void DynamicRovController::PublishControl()
     thrustersReference.stamp.sec = now_stamp_secs;
     thrustersReference.stamp.nanosec = now_stamp_nanosecs;
     thrusterDataPub_->publish(thrustersReference);
+
 }
 
 bool DynamicRovController::LoadDclConfiguration(std::shared_ptr<DCLConfiguration> dcl_conf, std::string filename)
@@ -436,9 +416,15 @@ void DynamicRovController::CommandsHandler(const std::shared_ptr<rmw_request_id_
     RCLCPP_INFO(this->get_logger(), "Service Response: %s", response->res.c_str());
 }
 
-void DynamicRovController::ClassicPidControlInizialization(std::shared_ptr<DCLConfiguration> conf, double sampleTime, ctb::DigitalPID& pidSurge, ctb::DigitalPID& pidYawRate)
+void DynamicRovController::ClassicPidControlInizialization(std::shared_ptr<DCLConfiguration> conf, double sampleTime,
+                                                           ctb::DigitalPID& pidSurge, ctb::DigitalPID& pidSway, ctb::DigitalPID& pidHeave,
+                                                           ctb::DigitalPID& pidRollRate, ctb::DigitalPID& pidPitchRate, ctb::DigitalPID& pidYawRate)
 {
     pidSurge.Initialize(conf->classicPidControl.pidGainsSurge, sampleTime, conf->classicPidControl.pidSatSurge);
+    pidSway.Initialize(conf->classicPidControl.pidGainsSway, sampleTime, conf->classicPidControl.pidSatSway);
+    pidHeave.Initialize(conf->classicPidControl.pidGainsHeave, sampleTime, conf->classicPidControl.pidSatHeave);
+    pidRollRate.Initialize(conf->classicPidControl.pidGainsRollRate, sampleTime, conf->classicPidControl.pidSatRollRate);
+    pidPitchRate.Initialize(conf->classicPidControl.pidGainsPitchRate, sampleTime, conf->classicPidControl.pidSatPitchRate);
     pidYawRate.Initialize(conf->classicPidControl.pidGainsYawRate, sampleTime, conf->classicPidControl.pidSatYawRate);
 }
 
@@ -451,11 +437,14 @@ void DynamicRovController::MoveByForce(const Eigen::Vector6d &force, Eigen::Vect
     tau[4] = vehicleForces.bodyframe_g[4];
     tau[5] = vehicleForces.bodyframe_g[5];
 
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd( rov_allocationMatrix, Eigen::ComputeFullV | Eigen::ComputeFullU );
+    volt = rovModel_.ThusterAllocation(- tau + force);
+
+    //Eigen::JacobiSVD<Eigen::MatrixXd> svd( rov_allocationMatrix, Eigen::ComputeFullV | Eigen::ComputeFullU );
     //std::cout << "rov_allocationMatrix = " << rov_allocationMatrix << std::endl;
-    volt = svd.solve(- tau + force);
-    //std::cout << "- tau + force = " << - tau + force << std::endl;
+    //volt = svd.solve(- tau + force);
+    //std::cout << "volt = " << volt << std::endl;
     //std::cout << "T*K*volt = " << rov_allocationMatrix*volt << std::endl;
+
 }
 
 void DynamicRovController::VehicleStatusCB(const rov_msgs::msg::VehicleStatus::SharedPtr msg) { vehicleStatus = *msg; }
@@ -463,5 +452,7 @@ void DynamicRovController::VehicleStatusCB(const rov_msgs::msg::VehicleStatus::S
 void DynamicRovController::ReferenceVelocitiesCB(const rov_msgs::msg::ReferenceVelocities::SharedPtr msg) { referenceVelocities = *msg; }
 
 void DynamicRovController::VehicleForcesCB(const rov_msgs::msg::Forces::SharedPtr msg) { vehicleForces = *msg; }
+
+void DynamicRovController::FilterDataCB(const rov_msgs::msg::NavFilterData::SharedPtr msg) { filterData = *msg; }
 
 } // namespace rov

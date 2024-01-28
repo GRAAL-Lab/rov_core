@@ -50,6 +50,8 @@ class ROVController : public rclcpp::Node {
     int option; // motion of ROV
     std::string current_state;
 
+    rov_msgs::msg::ReferenceVelocities referenceVelocities_;
+
     // FSM
     /*
     fsm::FSM uFsm_;

@@ -134,6 +134,15 @@ struct ThrusterMapping {
 struct DynamicPid {
     ctb::PIDGains pidGainsSurge;
     double pidSatSurge;
+    ctb::PIDGains pidGainsSway;
+    double pidSatSway;
+    ctb::PIDGains pidGainsHeave;
+    double pidSatHeave;
+
+    ctb::PIDGains pidGainsRollRate;
+    double pidSatRollRate;
+    ctb::PIDGains pidGainsPitchRate;
+    double pidSatPitchRate;
     ctb::PIDGains pidGainsYawRate;
     double pidSatYawRate;
 
@@ -154,6 +163,74 @@ struct DynamicPid {
         if (!ctb::GetParam(pidSurge, pidGainsSurge.Tr, "tr"))
             return false;
         if (!ctb::GetParam(pidSurge, pidSatSurge, "sat"))
+            return false;
+
+        const libconfig::Setting& pidSway = confObj["pidSway"];
+
+        if (!ctb::GetParam(pidSway, pidGainsSway.Kd, "kd"))
+            return false;
+        if (!ctb::GetParam(pidSway, pidGainsSway.Kp, "kp"))
+            return false;
+        if (!ctb::GetParam(pidSway, pidGainsSway.Ki, "ki"))
+            return false;
+        if (!ctb::GetParam(pidSway, pidGainsSway.Kff, "kff"))
+            return false;
+        if (!ctb::GetParam(pidSway, pidGainsSway.N, "n"))
+            return false;
+        if (!ctb::GetParam(pidSway, pidGainsSway.Tr, "tr"))
+            return false;
+        if (!ctb::GetParam(pidSway, pidSatSway, "sat"))
+            return false;
+
+        const libconfig::Setting& pidHeave = confObj["pidHeave"];
+
+        if (!ctb::GetParam(pidHeave, pidGainsHeave.Kd, "kd"))
+            return false;
+        if (!ctb::GetParam(pidHeave, pidGainsHeave.Kp, "kp"))
+            return false;
+        if (!ctb::GetParam(pidHeave, pidGainsHeave.Ki, "ki"))
+            return false;
+        if (!ctb::GetParam(pidHeave, pidGainsHeave.Kff, "kff"))
+            return false;
+        if (!ctb::GetParam(pidHeave, pidGainsHeave.N, "n"))
+            return false;
+        if (!ctb::GetParam(pidHeave, pidGainsHeave.Tr, "tr"))
+            return false;
+        if (!ctb::GetParam(pidHeave, pidSatHeave, "sat"))
+            return false;
+
+        const libconfig::Setting& pidRollRate = confObj["pidRollRate"];
+
+        if (!ctb::GetParam(pidRollRate, pidGainsRollRate.Kd, "kd"))
+            return false;
+        if (!ctb::GetParam(pidRollRate, pidGainsRollRate.Kp, "kp"))
+            return false;
+        if (!ctb::GetParam(pidRollRate, pidGainsRollRate.Ki, "ki"))
+            return false;
+        if (!ctb::GetParam(pidRollRate, pidGainsRollRate.Kff, "kff"))
+            return false;
+        if (!ctb::GetParam(pidRollRate, pidGainsRollRate.N, "n"))
+            return false;
+        if (!ctb::GetParam(pidRollRate, pidGainsRollRate.Tr, "tr"))
+            return false;
+        if (!ctb::GetParam(pidRollRate, pidSatRollRate, "sat"))
+            return false;
+
+        const libconfig::Setting& pidPitchRate = confObj["pidPitchRate"];
+
+        if (!ctb::GetParam(pidPitchRate, pidGainsPitchRate.Kd, "kd"))
+            return false;
+        if (!ctb::GetParam(pidPitchRate, pidGainsPitchRate.Kp, "kp"))
+            return false;
+        if (!ctb::GetParam(pidPitchRate, pidGainsPitchRate.Ki, "ki"))
+            return false;
+        if (!ctb::GetParam(pidPitchRate, pidGainsPitchRate.Kff, "kff"))
+            return false;
+        if (!ctb::GetParam(pidPitchRate, pidGainsPitchRate.N, "n"))
+            return false;
+        if (!ctb::GetParam(pidPitchRate, pidGainsPitchRate.Tr, "tr"))
+            return false;
+        if (!ctb::GetParam(pidPitchRate, pidSatPitchRate, "sat"))
             return false;
 
         const libconfig::Setting& pidYawRate = confObj["pidYawRate"];
@@ -189,6 +266,46 @@ struct DynamicPid {
                   << "Tr: " << a.pidGainsSurge.Tr << "\n"
                   << "Saturation: " << a.pidSatSurge << "\n"
                   << "----------------------\n"
+                  << "Pid Sway: "
+                  << "\n"
+                  << "Kd: " << a.pidGainsSway.Kd << "\n"
+                  << "Kp: " << a.pidGainsSway.Kp << "\n"
+                  << "Ki: " << a.pidGainsSway.Ki << "\n"
+                  << "Kff: " << a.pidGainsSway.Kff << "\n"
+                  << "N: " << a.pidGainsSway.N << "\n"
+                  << "Tr: " << a.pidGainsSway.Tr << "\n"
+                  << "Saturation: " << a.pidSatSway << "\n"
+                  << "----------------------\n"
+                  << "Pid Heave: "
+                  << "\n"
+                  << "Kd: " << a.pidGainsHeave.Kd << "\n"
+                  << "Kp: " << a.pidGainsHeave.Kp << "\n"
+                  << "Ki: " << a.pidGainsHeave.Ki << "\n"
+                  << "Kff: " << a.pidGainsHeave.Kff << "\n"
+                  << "N: " << a.pidGainsHeave.N << "\n"
+                  << "Tr: " << a.pidGainsHeave.Tr << "\n"
+                  << "Saturation: " << a.pidSatHeave << "\n"
+                  << "----------------------\n"
+                  << "Pid Roll Rate: "
+                  << "\n"
+                  << "Kd: " << a.pidGainsRollRate.Kd << "\n"
+                  << "Kp: " << a.pidGainsRollRate.Kp << "\n"
+                  << "Ki: " << a.pidGainsRollRate.Ki << "\n"
+                  << "Kff: " << a.pidGainsRollRate.Kff << "\n"
+                  << "N: " << a.pidGainsRollRate.N << "\n"
+                  << "Tr: " << a.pidGainsRollRate.Tr << "\n"
+                  << "Saturation: " << a.pidSatRollRate << "\n"
+                  << "----------------------\n"
+                  << "Pid Pitch Rate: "
+                  << "\n"
+                  << "Kd: " << a.pidGainsPitchRate.Kd << "\n"
+                  << "Kp: " << a.pidGainsPitchRate.Kp << "\n"
+                  << "Ki: " << a.pidGainsPitchRate.Ki << "\n"
+                  << "Kff: " << a.pidGainsPitchRate.Kff << "\n"
+                  << "N: " << a.pidGainsPitchRate.N << "\n"
+                  << "Tr: " << a.pidGainsPitchRate.Tr << "\n"
+                  << "Saturation: " << a.pidSatPitchRate << "\n"
+                  << "----------------------\n"
                   << "Pid Yaw Rate: "
                   << "\n"
                   << "Kd: " << a.pidGainsYawRate.Kd << "\n"
@@ -208,8 +325,8 @@ struct DCLConfiguration {
     bool enableThrusters;
     double thrusterPercLimit;
     ControlMode ctrlMode;
-    double surgeMin, surgeMax;
-    double yawRateMin, yawRateMax;
+    double surgeMin, surgeMax, swayMin, swayMax, heaveMin, heaveMax;
+    double rollRateMin, rollRateMax, pitchRateMin, pitchRateMax, yawRateMin, yawRateMax;
 
     //SurfaceVehicleModelParameters ulisseModel;
     UnderwaterModelParameters rovModel;
@@ -231,9 +348,9 @@ struct DCLConfiguration {
             os << a.thrusterMapping;
         } else if (a.ctrlMode == ControlMode::ClassicPIDControl) {
             os << a.classicPidControl;
-        } else {
+        } else if (a.ctrlMode == ControlMode::ComputedTorque){
             os << a.computedTorqueControl;
-        }
+        } else {}
 
         os << "==============================\n";
         return os;
@@ -265,6 +382,22 @@ struct DCLConfiguration {
         if (!ctb::GetParam(confObj, surgeMin, "surgeMin"))
             return false;
         if (!ctb::GetParam(confObj, surgeMax, "surgeMax"))
+            return false;
+        if (!ctb::GetParam(confObj, swayMin, "swayMin"))
+            return false;
+        if (!ctb::GetParam(confObj, swayMax, "swayMax"))
+            return false;
+        if (!ctb::GetParam(confObj, heaveMin, "heaveMin"))
+            return false;
+        if (!ctb::GetParam(confObj, heaveMax, "heaveMax"))
+            return false;
+        if (!ctb::GetParam(confObj, rollRateMin, "rollRateMin"))
+            return false;
+        if (!ctb::GetParam(confObj, rollRateMax, "rollRateMax"))
+            return false;
+        if (!ctb::GetParam(confObj, pitchRateMin, "pitchRateMin"))
+            return false;
+        if (!ctb::GetParam(confObj, pitchRateMax, "pitchRateMax"))
             return false;
         if (!ctb::GetParam(confObj, yawRateMin, "yawRateMin"))
             return false;
