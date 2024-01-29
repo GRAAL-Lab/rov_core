@@ -59,11 +59,13 @@ DynamicRovController::DynamicRovController(std::string file_name)
 
     if(rovModel_.params.heavyConf){
         rov_allocationMatrix.resize(6,8);
-        thruster_voltage.resize(8,1);
+        thruster_voltage_.resize(8,1);
+        volts_.resize(8,1);
     }
     else {
         rov_allocationMatrix.resize(6,6);
-        thruster_voltage.resize(6,1);
+        thruster_voltage_.resize(6,1);
+        volts_.resize(6,1);
     }
     //rov_allocationMatrix = T*K*Q;
     rov_allocationMatrix = rovModel_.params.T * rovModel_.params.K * rovModel_.params.Q;
@@ -137,12 +139,12 @@ void DynamicRovController::Run()
             if(vehicleStatus.vehicle_state == rov::states::ID::hold){
                 Eigen::Vector6d tau; tau.setZero();
                 //std::cout << "MoveByForce before" << std::endl;
-                MoveByForce(tau,thruster_voltage);
+                MoveByForce(tau,thruster_voltage_);
                 //std::cout << "MoveByForce after" << std::endl;
                 motion_direction = rov::inputs::ID::hold;
                 //std::cout << "ControlMode hold" << std::endl;
             }
-            else if(vehicleStatus.vehicle_state == rov::states::ID::velocity){
+            else if (vehicleStatus.vehicle_state == rov::states::ID::velocity){
                 Eigen::Vector6d tau; tau.setZero();
 
                 switch(motion_direction){
@@ -150,39 +152,39 @@ void DynamicRovController::Run()
                     //vehicleStatus.vehicle_state = rov::states::ID::halt;
                 } break;
                 case rov::inputs::ID::hold :{
-                    MoveByForce(tau,thruster_voltage);
+                    MoveByForce(tau,thruster_voltage_);
                 } break;
                 case rov::inputs::ID::forward :{
                     tau[0] = 10.0;
-                    MoveByForce(tau,thruster_voltage);
+                    MoveByForce(tau,thruster_voltage_);
                 } break;
                 case rov::inputs::ID::backward :{
                     tau[0] = -10.0;
-                    MoveByForce(tau,thruster_voltage);
+                    MoveByForce(tau,thruster_voltage_);
                 } break;
                 case rov::inputs::ID::up :{
                     tau[2] = -10.0;
-                    MoveByForce(tau,thruster_voltage);
+                    MoveByForce(tau,thruster_voltage_);
                 } break;
                 case rov::inputs::ID::down :{
                     tau[2] = 10.0;
-                    MoveByForce(tau,thruster_voltage);
+                    MoveByForce(tau,thruster_voltage_);
                 } break;
                 case rov::inputs::ID::left :{
                     tau[1] = -10.0;
-                    MoveByForce(tau,thruster_voltage);
+                    MoveByForce(tau,thruster_voltage_);
                 } break;
                 case rov::inputs::ID::right :{
                     tau[1] = 10.0;
-                    MoveByForce(tau,thruster_voltage);
+                    MoveByForce(tau,thruster_voltage_);
                 } break;
                 case rov::inputs::ID::turn_left :{
                     tau[5] = -0.1;
-                    MoveByForce(tau,thruster_voltage);
+                    MoveByForce(tau,thruster_voltage_);
                 } break;
                 case rov::inputs::ID::turn_right :{
                     tau[5] = 0.1;
-                    MoveByForce(tau,thruster_voltage);
+                    MoveByForce(tau,thruster_voltage_);
                 } break;
                 default:{
                     std::cout << "direction not supported (user input)" << std::endl;
@@ -192,19 +194,33 @@ void DynamicRovController::Run()
 
 
         } else if (dcl_conf->ctrlMode == ControlMode::ClassicPIDControl) {
-            //Dynamic Pids
+            Eigen::Vector6d dirV;
+            dirV.setZero();
+            if(vehicleStatus.vehicle_state == rov::states::ID::hold){
+                Eigen::Vector6d tau; tau.setZero();
+                MoveByForce(tau,thruster_voltage_);
+                motion_direction = rov::inputs::ID::hold;
+            }
+            else if (vehicleStatus.vehicle_state == rov::states::ID::velocity){
+
+                SetDirectionVector(dirV);
+                //Dynamic Pids
+
+                // different tau for normal configuration
+                // tau for heavy configuration
+
+                tau << dirV[0] * pidSurgeCP_.Compute(referenceVelocities.desired_surge, absSurgeFbk),
+                    dirV[1] * pidSwayCP_.Compute(referenceVelocities.desired_sway, absSwayFbk),
+                    dirV[2] * pidHeaveCP_.Compute(referenceVelocities.desired_heave, absHeaveFbk),
+                    dirV[3] * pidRollRateCP_.Compute(referenceVelocities.desired_roll_rate, rollRateFbk),
+                    dirV[4] * pidPitchRateCP_.Compute(referenceVelocities.desired_pitch_rate, pitchRateFbk),
+                    dirV[5] * pidYawRateCP_.Compute(referenceVelocities.desired_yaw_rate, yawRateFbk);
+
+                thruster_voltage_ = rovModel_.ThusterAllocation(tau);
+            }
+            else{}
 
             Eigen::Vector6d feedbackVel = Eigen::Vector6d::Zero();
-
-            // different tau for normal configuration
-            // tau for heavy configuration
-
-            tau << pidSurgeCP_.Compute(referenceVelocities.desired_surge, absSurgeFbk),
-                   pidSwayCP_.Compute(referenceVelocities.desired_sway, absSwayFbk),
-                   pidHeaveCP_.Compute(referenceVelocities.desired_heave, absHeaveFbk),
-                   pidRollRateCP_.Compute(referenceVelocities.desired_roll_rate, rollRateFbk),
-                   pidPitchRateCP_.Compute(referenceVelocities.desired_pitch_rate, pitchRateFbk),
-                   pidYawRateCP_.Compute(referenceVelocities.desired_yaw_rate, yawRateFbk);
 
             feedbackVel(0) = absSurgeFbk;
             feedbackVel(1) = absSwayFbk;
@@ -213,31 +229,25 @@ void DynamicRovController::Run()
             feedbackVel(4) = pitchRateFbk;
             feedbackVel(5) = yawRateFbk;
 
-            //double outOne, outTwo, outThree, outFour, outFive, outSix, outSeven, outEight;
-
-            //Eigen::VectorXd volts;
-
-            thruster_voltage = rovModel_.ThusterAllocation(tau);
-            //ulisseModel.InverseMotorsEquations(feedbackVel, forces, outleft, outright);
-            rovModel_.ThrustersSaturation(thruster_voltage, 1.0);
+            rovModel_.ThrustersSaturation(thruster_voltage_, 1.0);
 
             //Fill the classic dynamic pid contol msg
             auto t_now_ = std::chrono::system_clock::now();
             long now_nanosecs = (std::chrono::duration_cast<std::chrono::nanoseconds>(t_now_.time_since_epoch())).count();
             classicPidControlMsg.stamp.sec = static_cast<unsigned int>(now_nanosecs / static_cast<int>(1E9));
             classicPidControlMsg.stamp.nanosec = static_cast<unsigned int>(now_nanosecs % static_cast<int>(1E9));
-            classicPidControlMsg.desired_surge = referenceVelocities.desired_surge;
-            classicPidControlMsg.desired_sway = referenceVelocities.desired_sway;
-            classicPidControlMsg.desired_heave = referenceVelocities.desired_heave;
+            classicPidControlMsg.desired_surge = dirV[0]*referenceVelocities.desired_surge;
+            classicPidControlMsg.desired_sway = dirV[1]*referenceVelocities.desired_sway;
+            classicPidControlMsg.desired_heave = dirV[2]*referenceVelocities.desired_heave;
             classicPidControlMsg.feedback_surge = absSurgeFbk;
             classicPidControlMsg.feedback_sway = absSwayFbk;
             classicPidControlMsg.feedback_heave = absHeaveFbk;
             classicPidControlMsg.out_pid_surge = pidSurgeCP_.GetOutput();
             classicPidControlMsg.out_pid_sway = pidSwayCP_.GetOutput();
             classicPidControlMsg.out_pid_heave = pidHeaveCP_.GetOutput();
-            classicPidControlMsg.desired_roll_rate = referenceVelocities.desired_roll_rate;
-            classicPidControlMsg.desired_pitch_rate = referenceVelocities.desired_yaw_rate;
-            classicPidControlMsg.desired_yaw_rate = referenceVelocities.desired_yaw_rate;
+            classicPidControlMsg.desired_roll_rate = dirV[3]*referenceVelocities.desired_roll_rate;
+            classicPidControlMsg.desired_pitch_rate = dirV[4]*referenceVelocities.desired_yaw_rate;
+            classicPidControlMsg.desired_yaw_rate = dirV[5]*referenceVelocities.desired_yaw_rate;
             classicPidControlMsg.feedback_roll_rate = rollRateFbk;
             classicPidControlMsg.feedback_pitch_rate = pitchRateFbk;
             classicPidControlMsg.feedback_yaw_rate = yawRateFbk;
@@ -246,15 +256,15 @@ void DynamicRovController::Run()
             classicPidControlMsg.out_pid_yaw_rate = pidYawRateCP_.GetOutput();
 
             classicPidControlMsg.tau = { tau[0], tau[1], tau[2], tau[3],tau[4], tau[5]};
-            classicPidControlMsg.motor_percentage.first_percentage = thruster_voltage[0];
-            classicPidControlMsg.motor_percentage.second_percentage = thruster_voltage[1];
-            classicPidControlMsg.motor_percentage.third_percentage = thruster_voltage[2];
-            classicPidControlMsg.motor_percentage.forth_percentage = thruster_voltage[3];
-            classicPidControlMsg.motor_percentage.fifth_percentage = thruster_voltage[4];
-            classicPidControlMsg.motor_percentage.sixth_percentage = thruster_voltage[5];
+            classicPidControlMsg.motor_percentage.first_percentage = thruster_voltage_[0];
+            classicPidControlMsg.motor_percentage.second_percentage = thruster_voltage_[1];
+            classicPidControlMsg.motor_percentage.third_percentage = thruster_voltage_[2];
+            classicPidControlMsg.motor_percentage.forth_percentage = thruster_voltage_[3];
+            classicPidControlMsg.motor_percentage.fifth_percentage = thruster_voltage_[4];
+            classicPidControlMsg.motor_percentage.sixth_percentage = thruster_voltage_[5];
             if(rovModel_.params.heavyConf){
-                classicPidControlMsg.motor_percentage.seventh_percentage = thruster_voltage[6];
-                classicPidControlMsg.motor_percentage.eighth_percentage = thruster_voltage[7];
+                classicPidControlMsg.motor_percentage.seventh_percentage = thruster_voltage_[6];
+                classicPidControlMsg.motor_percentage.eighth_percentage = thruster_voltage_[7];
             }
 
             classicPidControlPub_->publish(classicPidControlMsg);
@@ -305,17 +315,17 @@ void DynamicRovController::Run()
         }*/
         else{}
 
-        rovModel_.ThrustersSaturation(thruster_voltage, 1.0);
-        //std::cout << "thrusterVoltage " << thruster_voltage <<std::endl;
-        thrustersReference.first_percentage = thruster_voltage[0];
-        thrustersReference.second_percentage = thruster_voltage[1];
-        thrustersReference.third_percentage = thruster_voltage[2];
-        thrustersReference.forth_percentage = thruster_voltage[3];
-        thrustersReference.fifth_percentage = thruster_voltage[4];
-        thrustersReference.sixth_percentage = thruster_voltage[5];
+        rovModel_.ThrustersSaturation(thruster_voltage_, 1.0);
+        //std::cout << "thrusterVoltage " << thruster_voltage_ <<std::endl;
+        thrustersReference.first_percentage = thruster_voltage_[0];
+        thrustersReference.second_percentage = thruster_voltage_[1];
+        thrustersReference.third_percentage = thruster_voltage_[2];
+        thrustersReference.forth_percentage = thruster_voltage_[3];
+        thrustersReference.fifth_percentage = thruster_voltage_[4];
+        thrustersReference.sixth_percentage = thruster_voltage_[5];
         if(rovModel_.params.heavyConf){
-            thrustersReference.seventh_percentage = thruster_voltage[6];
-            thrustersReference.eighth_percentage = thruster_voltage[7];
+            thrustersReference.seventh_percentage = thruster_voltage_[6];
+            thrustersReference.eighth_percentage = thruster_voltage_[7];
         }
     } else {
         //std::cout << "HaltMode " << std::endl;
@@ -445,6 +455,45 @@ void DynamicRovController::MoveByForce(const Eigen::Vector6d &force, Eigen::Vect
     //std::cout << "volt = " << volt << std::endl;
     //std::cout << "T*K*volt = " << rov_allocationMatrix*volt << std::endl;
 
+}
+
+void DynamicRovController::SetDirectionVector(Eigen::Vector6d &d_vect){
+    d_vect.setZero();
+    switch(motion_direction){
+    case rov::inputs::ID::halt :{
+        //vehicleStatus.vehicle_state = rov::states::ID::halt;
+    } break;
+    case rov::inputs::ID::hold :{
+        d_vect.setZero();
+    } break;
+    case rov::inputs::ID::forward :{
+        d_vect[0] = 1;
+    } break;
+    case rov::inputs::ID::backward :{
+        d_vect[0] = -1;
+    } break;
+    case rov::inputs::ID::up :{
+        directionVector_[2] = 1;
+    } break;
+    case rov::inputs::ID::down :{
+        d_vect[2] = -1;
+    } break;
+    case rov::inputs::ID::left :{
+        d_vect[1] = -1;
+    } break;
+    case rov::inputs::ID::right :{
+        d_vect[1] = 1;
+    } break;
+    case rov::inputs::ID::turn_left :{
+        d_vect[5] = -1;
+    } break;
+    case rov::inputs::ID::turn_right :{
+        d_vect[5] = 1;
+    } break;
+    default:{
+        std::cout << "direction not supported (user input)" << std::endl;
+    } break;
+    }
 }
 
 void DynamicRovController::VehicleStatusCB(const rov_msgs::msg::VehicleStatus::SharedPtr msg) { vehicleStatus = *msg; }

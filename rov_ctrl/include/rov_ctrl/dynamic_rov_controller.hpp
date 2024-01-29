@@ -121,10 +121,12 @@ class DynamicRovController : public rclcpp::Node {
     void ReferenceVelocitiesCB(const rov_msgs::msg::ReferenceVelocities::SharedPtr msg);
     void VehicleStatusCB(const rov_msgs::msg::VehicleStatus::SharedPtr msg);
     void VehicleForcesCB(const rov_msgs::msg::Forces::SharedPtr msg);
+    void SetDirectionVector(Eigen::Vector6d &d_vect);
     //void VehicleStatusCB(const ulisse_msgs::msg::VehicleStatus::SharedPtr msg);
 
-    Eigen::VectorXd thruster_voltage;
+    Eigen::VectorXd thruster_voltage_, volts_;
     int motion_direction;
+    Eigen::Vector6d directionVector_;
 
 
 public:
