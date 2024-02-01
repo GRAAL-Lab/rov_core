@@ -53,6 +53,8 @@ DynamicRovController::DynamicRovController(std::string file_name)
 
     rovModel_.params = dcl_conf->rovModel;
 
+    sampleTime_ = 1/dcl_conf->controlLoopRate;
+
     std::cout << "Qparam =" << rovModel_.params.Q << std::endl;
     std::cout << "Tparam =" << rovModel_.params.T << std::endl;
     std::cout << "Kparam =" << rovModel_.params.K<< std::endl;
@@ -136,7 +138,7 @@ void DynamicRovController::Run()
         //ThrusterMapping mode
         if (dcl_conf->ctrlMode == ControlMode::Forces) {
             //std::cout << "ControlMode hold" << std::endl;
-            if(vehicleStatus.vehicle_state == rov::states::ID::hold){
+            if (vehicleStatus.vehicle_state == rov::states::ID::hold){
                 Eigen::Vector6d tau; tau.setZero();
                 //std::cout << "MoveByForce before" << std::endl;
                 MoveByForce(tau,thruster_voltage_);
@@ -209,12 +211,20 @@ void DynamicRovController::Run()
                 // different tau for normal configuration
                 // tau for heavy configuration
 
-                tau << dirV[0] * pidSurgeCP_.Compute(referenceVelocities.desired_surge, absSurgeFbk),
-                    dirV[1] * pidSwayCP_.Compute(referenceVelocities.desired_sway, absSwayFbk),
-                    dirV[2] * pidHeaveCP_.Compute(referenceVelocities.desired_heave, absHeaveFbk),
-                    dirV[3] * pidRollRateCP_.Compute(referenceVelocities.desired_roll_rate, rollRateFbk),
-                    dirV[4] * pidPitchRateCP_.Compute(referenceVelocities.desired_pitch_rate, pitchRateFbk),
-                    dirV[5] * pidYawRateCP_.Compute(referenceVelocities.desired_yaw_rate, yawRateFbk);
+                Eigen::Vector3d bodyF_dirV;
+                bodyF_dirV = bodyF_R_worldF * dirV.head(3);
+
+                tau << pidSurgeCP_.Compute(bodyF_dirV[0] * referenceVelocities.desired_surge, relSurgeFbk),
+                    pidSwayCP_.Compute(bodyF_dirV[1] * referenceVelocities.desired_sway, relSwayFbk),
+                    pidHeaveCP_.Compute(bodyF_dirV[2] * referenceVelocities.desired_heave, relHeaveFbk),
+                    pidRollRateCP_.Compute(dirV[3] * referenceVelocities.desired_roll_rate, rollRateFbk),
+                    pidPitchRateCP_.Compute(dirV[4] * referenceVelocities.desired_pitch_rate, pitchRateFbk),
+                    pidYawRateCP_.Compute(dirV[5] * referenceVelocities.desired_yaw_rate, yawRateFbk);
+
+                std::cout << "directionVector " << dirV << std::endl;
+                std::cout << "pidSurgeCP_ Kp " << pidSurgeCP_.GetGains().Kp << std::endl;
+                std::cout << "pidSurgeCP_ Ki " << pidSurgeCP_.GetGains().Ki << std::endl;
+                std::cout << "pidSurgeCP_ Kd " << pidSurgeCP_.GetGains().Kd << std::endl;
 
                 thruster_voltage_ = rovModel_.ThusterAllocation(tau);
             }
@@ -473,10 +483,10 @@ void DynamicRovController::SetDirectionVector(Eigen::Vector6d &d_vect){
         d_vect[0] = -1;
     } break;
     case rov::inputs::ID::up :{
-        directionVector_[2] = 1;
+        d_vect[2] = -1;
     } break;
     case rov::inputs::ID::down :{
-        d_vect[2] = -1;
+        d_vect[2] = 1;
     } break;
     case rov::inputs::ID::left :{
         d_vect[1] = -1;

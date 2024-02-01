@@ -166,7 +166,7 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     worldF_cable_ending =  worldF_R_bodyF_ * bodyF_cable_ending_;
     worldF_cable_ending =  worldF_cable_ending + pos_initial;
     ctb::LocalUTM2LatLong(worldF_cable_ending, centroidLocation_, cableEndPos_, cableEnd_altitude_);
-    rovModel_.SetCableLength(4.0);
+    rovModel_.SetCableLength(5.0);
 
     Eigen::Vector3d worldF_cable_starting;
     ctb::LatLong cable_starting_, cable_ending_;
@@ -649,7 +649,7 @@ void VehicleSimulator::SimulateSensors()
 
     t_stamp_ROV.header.stamp = this->get_clock()->now();
     t_stamp_ROV.header.frame_id = "world";
-    t_stamp_ROV.child_frame_id = "ROV2";
+    t_stamp_ROV.child_frame_id = "ROV";
     t_stamp_ROV.transform.translation.x = ROVpose_.x();
     t_stamp_ROV.transform.translation.y = ROVpose_.y();
     t_stamp_ROV.transform.translation.z = altitude_;
