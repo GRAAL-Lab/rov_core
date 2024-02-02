@@ -57,6 +57,7 @@ rosidl_generate_interfaces(rov_msgs
   # Control
   #"msg/PolygonPath.msg"
   "msg/NavFilterData.msg"
+  "msg/TaskStatus.msg"
 
   
 

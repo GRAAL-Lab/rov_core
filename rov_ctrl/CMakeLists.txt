@@ -70,6 +70,24 @@ set(use_SYSTEM_BOOST TRUE)
 set(rov_kinematic_ctrl_lib_sources
     # Main Classes
     src/rov_ctrl/kinematic_rov_controller.cpp
+    # States
+    src/rov_ctrl/states/generic_state.cpp
+    src/rov_ctrl/states/state_halt.cpp
+    src/rov_ctrl/states/state_latlong.cpp
+    src/rov_ctrl/states/state_hold.cpp
+    src/rov_ctrl/states/state_surgeyawrate.cpp
+    # Commands
+    src/rov_ctrl/commands/generic_command.cpp
+    src/rov_ctrl/commands/command_halt.cpp
+    src/rov_ctrl/commands/command_hold.cpp
+    src/rov_ctrl/commands/command_latlong.cpp
+    src/rov_ctrl/commands/command_surgeyawrate.cpp
+    # Events
+    #src/ulisse_ctrl/events/generic_event.cpp
+    src/rov_ctrl/events/event_rc_enabled.cpp
+    src/rov_ctrl/events/event_near_goal_position.cpp
+    # TASKS
+    src/rov_ctrl/tasks/SafetyBoundaries.cpp
 
 )
 

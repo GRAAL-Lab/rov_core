@@ -9,7 +9,7 @@
 #include "ctrl_toolbox/HelperFunctions.h"
 #include "ctrl_toolbox/pid/DigitalPID.h"
 //#include "surface_vehicle_model/surfacevehiclemodel.hpp"
-//#include "ulisse_msgs/msg/task_status.hpp"
+#include "rov_msgs/msg/task_status.hpp"
 
 #include "underwater_vehicle_model/underwater_vehicle.hpp"
 //#include "rov_msgs/
@@ -28,11 +28,11 @@ struct ControlData {
     ControlData() : radioControllerEnabled(false) {}
 };
 
-//struct TasksInfo {
+struct TasksInfo {
 
-//    std::shared_ptr<tpik::Task> task;
-//    rclcpp::Publisher<ulisse_msgs::msg::TaskStatus>::SharedPtr taskPub;
-//};
+    std::shared_ptr<tpik::Task> task;
+    rclcpp::Publisher<rov_msgs::msg::TaskStatus>::SharedPtr taskPub;
+};
 
 enum class ControlMode : int {
     ThrusterMapping,

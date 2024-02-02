@@ -8,10 +8,10 @@
 namespace rov {
 
 namespace robotModelID {
-const std::string ROV = "BlueROV2";
+const std::string blueROV = "BlueROV2";
 }
 
-/*namespace task {
+namespace task {
 
 const std::string asvLinearVelocity = "ASV_Linear_Velocity";
 const std::string asvAngularPosition = "ASV_Angular_Position";
@@ -26,18 +26,14 @@ const std::string asvAbsoluteAxisAlignmentHold = "ASV_Absolute_Axis_Alignment_Ho
 const std::string asvLinearVelocityHold = "ASV_Linear_Velocity_Hold";
 
 }
-*/
-/*
+
 namespace action {
 
 const std::string goTo = "Move_To";
 const std::string halt = "Halt";
 const std::string hold = "Hold";
-const std::string surge_heading = "Surge_Heading";
-const std::string surge_yawrate = "Surge_YawRate";
-const std::string pathfollow = "Path_Following";
+const std::string velocity = "Surge_Sway_Heave_YawRate";
 }
-*/
 namespace inputs {
 
 namespace ID {
@@ -98,8 +94,6 @@ const std::string down = "Down";
 }
 }
 
-
-/*
 namespace events {
 
 namespace names {
@@ -109,17 +103,16 @@ const char* const switchstate = "SWITCHSTATE";
 //const char* const surgeyawratetimeout = "SURGEYAWRATETIMEOUT";
 const char* const rcenabled = "RCENABLED";
 }
-*/
 
-/*
 namespace topicnames {
 const char* const events = "/ctrl/out/events";
 }
-*/
+
 namespace priority {
 const uint8_t high = 10;
 const uint8_t medium = 5;
 const uint8_t low = 1;
+}
 }
 
 
