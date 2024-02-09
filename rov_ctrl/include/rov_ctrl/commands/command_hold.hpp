@@ -22,7 +22,7 @@ namespace commands {
 
         //void SetWaterCurrent(const std::shared_ptr<Eigen::Vector2d>& inertialF_waterCurrent);
 
-        void SetPositionToHold(const ctb::LatLong& p);
+        void SetPositionToHold(const ctb::LatLong& p, const double &altitude);
     };
 }
 }

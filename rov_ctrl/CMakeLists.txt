@@ -30,9 +30,11 @@ find_package(ikcl REQUIRED)
 find_package(Boost REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(sisl_toolbox REQUIRED)
-
+find_package(geometry_msgs REQUIRED)
 find_package(underwater_vehicle_model REQUIRED)
 find_package(rov_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 
 link_directories(${Boost_LIBRARIES})
 # uncomment the following section in order to fill in
@@ -70,6 +72,8 @@ set(use_SYSTEM_BOOST TRUE)
 set(rov_kinematic_ctrl_lib_sources
     # Main Classes
     src/rov_ctrl/kinematic_rov_controller.cpp
+    # Helpers
+    src/rov_ctrl/configuration.cpp
     # States
     src/rov_ctrl/states/generic_state.cpp
     src/rov_ctrl/states/state_halt.cpp
@@ -98,8 +102,8 @@ set(rov_dynamic_ctrl_lib_sources
 
 ## Libraries
 add_library(rov_kinematic_ctrl_lib ${rov_kinematic_ctrl_lib_sources})
-ament_target_dependencies(rov_kinematic_ctrl_lib rclcpp std_msgs ulisse_msgs surface_vehicle_model ament_index_cpp)
-target_link_libraries(rov_kinematic_ctrl_lib ${surface_vehicle_model_LIBRARIES} ${ulisse_msgs_LIBRARIES} ${underwater_vehicle_model_LIBRARIES} ${rov_msgs_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} ikcl tpik config++ Geographic rml fsm ctrl_toolbox sisl_toolbox)
+ament_target_dependencies(rov_kinematic_ctrl_lib rclcpp std_msgs geometry_msgs tf2 tf2_ros ulisse_msgs ament_index_cpp)
+target_link_libraries(rov_kinematic_ctrl_lib ${underwater_vehicle_model_LIBRARIES} ${rov_msgs_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES} ikcl tpik config++ Geographic rml fsm ctrl_toolbox sisl_toolbox)
 
 add_library(rov_dynamic_ctrl_lib ${rov_dynamic_ctrl_lib_sources})
 ament_target_dependencies(rov_dynamic_ctrl_lib rclcpp std_msgs rov_msgs underwater_vehicle_model ament_index_cpp)

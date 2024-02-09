@@ -21,7 +21,7 @@ namespace commands {
     void CommandSurgeYawRate::SetTimeout(uint timeout_sec)
     {
         stateSurgeYawRate_->timeout = timeout_sec;
-        stateSurgeYawRate_->SetSurgeYawRate(0.0, 0.0);
+        stateSurgeYawRate_->SetSurgeYawRate(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
     }
 }
 }

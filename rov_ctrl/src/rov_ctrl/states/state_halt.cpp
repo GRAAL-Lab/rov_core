@@ -26,8 +26,8 @@ namespace states {
     fsm::retval StateHalt::OnEntry()
     {
         //set tasks
-        safetyBoundariesTask_ = std::dynamic_pointer_cast<ikcl::SafetyBoundaries>(tasksMap.find(rov::task::asvSafetyBoundaries)->second.task);
-        absoluteAxisAlignmentSafetyTask_ = std::dynamic_pointer_cast<ikcl::AbsoluteAxisAlignment>(tasksMap.find(rov::task::asvAbsoluteAxisAlignmentSafety)->second.task);
+        //safetyBoundariesTask_ = std::dynamic_pointer_cast<ikcl::SafetyBoundaries>(tasksMap.find(rov::task::rovSafetyBoundaries)->second.task);
+        //absoluteAxisAlignmentSafetyTask_ = std::dynamic_pointer_cast<ikcl::AbsoluteAxisAlignment>(tasksMap.find(rov::task::rovAbsoluteAxisAlignmentSafety)->second.task);
 
         if (actionManager->SetAction(rov::action::halt, true)) {
             return fsm::ok;
@@ -41,7 +41,7 @@ namespace states {
         //SafetyBoundaries task: it's a velocity task base on the distance from the boundaries. The behaviour that has to achive is align to
         //a desired escape directon and to generate a desired velocity. To do this we use the task AbsoluteAxisAlignment to cope with
         //the align behavior activated in function of the internal actiovation function of the safety task.
-
+/*
         safetyBoundariesTask_->VehiclePosition() = ctrlData->inertialF_linearPosition;
 
         Eigen::MatrixXd Aexternal;
@@ -64,7 +64,7 @@ namespace states {
 
            // Set the gain of the cartesian distance task
         safetyBoundariesTask_->ExternalActivationFunction() = taskGainSafety * Eigen::MatrixXd::Identity(safetyBoundariesTask_->TaskSpace(), safetyBoundariesTask_->TaskSpace());
-
+*/
            //std::cout << "STATE HALT" << std::endl;
         return fsm::ok;
     }

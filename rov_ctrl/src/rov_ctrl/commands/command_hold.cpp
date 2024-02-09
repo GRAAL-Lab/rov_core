@@ -24,9 +24,10 @@ namespace commands {
         stateHold_->inertialF_waterCurrent = inertialF_waterCurrent;
     }*/
 
-    void CommandHold::SetPositionToHold(const LatLong& p)
+    void CommandHold::SetPositionToHold(const LatLong& p, const double &altitude)
     {
         stateHold_->positionToHold = p;
+        stateHold_->altitudeToHold = altitude;
     }
 }
 }

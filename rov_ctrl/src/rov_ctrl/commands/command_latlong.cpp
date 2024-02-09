@@ -14,14 +14,16 @@ namespace commands {
         return fsm_->SetNextState(rov::states::ID::latlongalt);
     }
 
-    bool CommandLatLong::SetGoTo(LatLong goalPosition, double acceptanceRadius)
+    bool CommandLatLong::SetGoTo(LatLong goalPosition, double goalAltitude, double acceptanceRadius)
     {
         if (std::isnan(goalPosition.latitude) ||
             std::isnan(goalPosition.longitude) ||
+            std::isnan(goalAltitude) ||
             std::isnan(acceptanceRadius)) {
             return false;
         } else {
             stateLatLong_->goalPosition = goalPosition;
+            stateLatLong_->goalAltitude = goalAltitude;
             stateLatLong_->acceptanceRadius = acceptanceRadius;
             return true;
         }

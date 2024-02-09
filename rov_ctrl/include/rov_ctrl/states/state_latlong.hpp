@@ -21,6 +21,7 @@ namespace states {
         fsm::retval Execute() override;
 
         LatLong goalPosition;
+        double goalAltitude;
         double goalHeading;
         double goalDistance;
         double acceptanceRadius;

@@ -56,19 +56,15 @@ const std::string reference_velocities = "/rov/ctrl/reference_velocities";
 //const std::string pathfollowing = "/ulisse/ctrl/pathfollowing"; // ILOS
 
 // TASKS
-//const std::string task_absolute_axis_alignment = "/ulisse/task/ASV_Absolute_Axis_Alignment";
-//const std::string task_linear_velocity = "/ulisse/task/ASV_Linear_Velocity";
-//const std::string task_angular_position = "/ulisse/task/ASV_Angular_Position";
-//const std::string task_angular_position_ilos = "/ulisse/task/ASV_Angular_Position_ILOS";
-//const std::string task_cartesian_distance = "/ulisse/task/ASV_Cartesian_Distance";
-//const std::string task_cartesian_distance_path_follow = "/ulisse/task/ASV_Cartesian_Distance_Path_Follow";
-//const std::string task_safety_boundaries = "/ulisse/task/ASV_Safety_Boundaries";
-//const std::string task_absolute_axis_alignment_safety = "/ulisse/task/ASV_Absolute_Axis_Alignment_Safety";
-//const std::string task_absolute_axis_alignment_hold = "/ulisse/task/ASV_Absolute_Axis_Alignment_Hold";
-//const std::string task_absolute_axis_alignment_ilos = "/ulisse/task/ASV_Absolute_Axis_Alignment_ILOS";
-//const std::string task_linear_velocity_hold = "/ulisse/task/ASV_Linear_Velocity_Hold";
-//const std::string task_linear_velocity_current = "/ulisse/task/ASV_Linear_Velocity_Current";
-//const std::string task_absolute_axis_alignment_current = "/ulisse/task/ASV_Absolute_Axis_Alignment_CurrentEst";
+const std::string task_absolute_axis_alignment = "/rov/task/ASV_Absolute_Axis_Alignment";
+const std::string task_linear_velocity = "/rov/task/ASV_Linear_Velocity";
+const std::string task_angular_position = "/rov/task/ASV_Angular_Position";
+const std::string task_cartesian_distance = "/rov/task/ASV_Cartesian_Distance";
+//const std::string task_cartesian_distance_path_follow = "/rov/task/ASV_Cartesian_Distance_Path_Follow";
+const std::string task_safety_boundaries = "/rov/task/ASV_Safety_Boundaries";
+const std::string task_absolute_axis_alignment_safety = "/rov/task/ASV_Absolute_Axis_Alignment_Safety";
+const std::string task_absolute_axis_alignment_hold = "/rov/task/ASV_Absolute_Axis_Alignment_Hold";
+const std::string task_linear_velocity_hold = "/rov/task/ASV_Linear_Velocity_Hold";
 
 //const std::string tpik_action = "/ulisse/task/tpik_action";
 

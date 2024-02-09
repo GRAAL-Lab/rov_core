@@ -31,10 +31,10 @@ namespace states {
     fsm::retval StateLatLong::OnEntry()
     {
         //set tasks
-        safetyBoundariesTask_ = std::dynamic_pointer_cast<ikcl::SafetyBoundaries>(tasksMap.find(rov::task::asvSafetyBoundaries)->second.task);
-        absoluteAxisAlignmentSafetyTask_ = std::dynamic_pointer_cast<ikcl::AbsoluteAxisAlignment>(tasksMap.find(rov::task::asvAbsoluteAxisAlignmentSafety)->second.task);
-        cartesianDistanceTask_ = std::dynamic_pointer_cast<ikcl::CartesianDistance>(tasksMap.find(rov::task::asvCartesianDistance)->second.task);
-        alignToTargetTask_ = std::dynamic_pointer_cast<ikcl::AlignToTarget>(tasksMap.find(rov::task::asvAngularPosition)->second.task);
+        //safetyBoundariesTask_ = std::dynamic_pointer_cast<ikcl::SafetyBoundaries>(tasksMap.find(rov::task::rovSafetyBoundaries)->second.task);
+        //absoluteAxisAlignmentSafetyTask_ = std::dynamic_pointer_cast<ikcl::AbsoluteAxisAlignment>(tasksMap.find(rov::task::rovAbsoluteAxisAlignmentSafety)->second.task);
+        cartesianDistanceTask_ = std::dynamic_pointer_cast<ikcl::CartesianDistance>(tasksMap.find(rov::task::rovCartesianDistance)->second.task);
+        alignToTargetTask_ = std::dynamic_pointer_cast<ikcl::AlignToTarget>(tasksMap.find(rov::task::rovAngularPosition)->second.task);
 
         if (actionManager->SetAction(rov::action::goTo, true)) {
             return fsm::ok;
@@ -59,29 +59,29 @@ namespace states {
         //a desired escape directon and to generate a desired velocity. To do this we use the task AbsoluteAxisAlignment to cope with
         //the align behavior activated in function of the internal actiovation function of the safety task.
 
-        safetyBoundariesTask_->VehiclePosition() = ctrlData->inertialF_linearPosition;
+        //safetyBoundariesTask_->VehiclePosition() = ctrlData->inertialF_linearPosition;
 
-        Eigen::MatrixXd Aexternal;
+        //Eigen::MatrixXd Aexternal;
 
-        Aexternal = safetyBoundariesTask_->InternalActivationFunction().maxCoeff() * Aexternal.setIdentity(absoluteAxisAlignmentSafetyTask_->TaskSpace(), absoluteAxisAlignmentSafetyTask_->TaskSpace());
+        //Aexternal = safetyBoundariesTask_->InternalActivationFunction().maxCoeff() * Aexternal.setIdentity(absoluteAxisAlignmentSafetyTask_->TaskSpace(), absoluteAxisAlignmentSafetyTask_->TaskSpace());
 
-        absoluteAxisAlignmentSafetyTask_->ExternalActivationFunction() = Aexternal;
+        //absoluteAxisAlignmentSafetyTask_->ExternalActivationFunction() = Aexternal;
 
-        absoluteAxisAlignmentSafetyTask_->SetRobotAxis2Align(Eigen::Vector3d(1, 0, 0), rov::robotModelID::blueROV);
-        absoluteAxisAlignmentSafetyTask_->SetDirectionAlignment(safetyBoundariesTask_->GetAlignVector(rml::FrameID::WorldFrame),
-            rml::FrameID::WorldFrame);
+        //absoluteAxisAlignmentSafetyTask_->SetRobotAxis2Align(Eigen::Vector3d(1, 0, 0), rov::robotModelID::blueROV);
+        //absoluteAxisAlignmentSafetyTask_->SetDirectionAlignment(safetyBoundariesTask_->GetAlignVector(rml::FrameID::WorldFrame),
+        //    rml::FrameID::WorldFrame);
 
         //To avoid the case in which the error between the goal heading and the current heading is too big
         //we activate the the cartesian distance through the gain based on a bell-shaped function on the heading error
 
         //compute the heading error
-        double headingErrorsafety = absoluteAxisAlignmentSafetyTask_->ControlVariable().norm();
+        //double headingErrorsafety = absoluteAxisAlignmentSafetyTask_->ControlVariable().norm();
 
         //compute the gain of the cartesian distance
-        double taskGainSafety = rml::DecreasingBellShapedFunction(minHeadingError_, maxHeadingError_, 0, 1.0, headingErrorsafety);
+        //double taskGainSafety = rml::DecreasingBellShapedFunction(minHeadingError_, maxHeadingError_, 0, 1.0, headingErrorsafety);
 
         // Set the gain of the cartesian distance task
-        safetyBoundariesTask_->ExternalActivationFunction() = taskGainSafety * Eigen::MatrixXd::Identity(safetyBoundariesTask_->TaskSpace(), safetyBoundariesTask_->TaskSpace());
+        //safetyBoundariesTask_->ExternalActivationFunction() = taskGainSafety * Eigen::MatrixXd::Identity(safetyBoundariesTask_->TaskSpace(), safetyBoundariesTask_->TaskSpace());
 
 
 
@@ -99,7 +99,7 @@ namespace states {
          */
 
         ctb::DistanceAndAzimuthRad(ctrlData->inertialF_linearPosition, goalPosition, goalDistance, goalHeading);
-
+        double goalDistance_z = abs(ctrlData->inertialF_altitude - goalAltitude);
         // }
 
         //double finalGoalDistance, finalGoalHeading;
@@ -111,7 +111,7 @@ namespace states {
         } else {
 
             //Set the distance vector to the target
-            cartesianDistanceTask_->SetTargetDistance(Eigen::Vector3d(goalDistance * cos(goalHeading), goalDistance * sin(goalHeading), 0), rml::FrameID::WorldFrame);
+            cartesianDistanceTask_->SetTargetDistance(Eigen::Vector3d(goalDistance * cos(goalHeading), goalDistance * sin(goalHeading), goalDistance_z), rml::FrameID::WorldFrame);
             //Set the align vector to the target
             alignToTargetTask_->SetTargetDistance(Eigen::Vector3d(goalDistance * cos(goalHeading), goalDistance * sin(goalHeading), 0), rml::FrameID::WorldFrame);
 

@@ -40,6 +40,7 @@ namespace states {
         double goalDistance;
 
         ctb::LatLong positionToHold;
+        double altitudeToHold;
 
         bool ConfigureStateFromFile(libconfig::Config& confObj) override;
     };

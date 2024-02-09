@@ -13,17 +13,20 @@ const std::string blueROV = "BlueROV2";
 
 namespace task {
 
-const std::string asvLinearVelocity = "ASV_Linear_Velocity";
-const std::string asvAngularPosition = "ASV_Angular_Position";
-const std::string asvAngularPositionHold = "ASV_Angular_Position_Hold";
-const std::string asvAbsoluteAxisAlignment = "ASV_Absolute_Axis_Alignment";
-const std::string asvCartesianDistance = "ASV_Cartesian_Distance";
-const std::string asvCartesianDistanceHold = "ASV_Cartesian_Distance_Hold";
-const std::string asvCartesianDistancePathFollowing = "ASV_Cartesian_Distance_Path_Follow";
-const std::string asvSafetyBoundaries = "ASV_Safety_Boundaries";
-const std::string asvAbsoluteAxisAlignmentSafety = "ASV_Absolute_Axis_Alignment_Safety";
-const std::string asvAbsoluteAxisAlignmentHold = "ASV_Absolute_Axis_Alignment_Hold";
-const std::string asvLinearVelocityHold = "ASV_Linear_Velocity_Hold";
+const std::string rovLinearVelocity = "ROV_Linear_Velocity";
+const std::string rovAngularVelocity = "ROV_Angular_Velocity";
+const std::string rovAngularPosition = "ROV_Angular_Position"; //
+const std::string rovAbsoluteAxisAlignment = "ROV_Absolute_Axis_Alignment";
+const std::string rovCartesianDistance = "ROV_Cartesian_Distance";
+
+const std::string rovSafetyBoundaries = "ROV_Safety_Boundaries";
+const std::string rovAbsoluteAxisAlignmentSafety = "ROV_Absolute_Axis_Alignment_Safety";
+
+const std::string rovAngularPositionHold = "ROV_Angular_Position_Hold"; //
+const std::string rovCartesianDistanceHold = "ROV_Cartesian_Distance_Hold";
+
+const std::string rovAbsoluteAxisAlignmentHold = "ROV_Absolute_Axis_Alignment_Hold";
+const std::string rovLinearVelocityHold = "ROV_Linear_Velocity_Hold";
 
 }
 
@@ -34,6 +37,7 @@ const std::string halt = "Halt";
 const std::string hold = "Hold";
 const std::string velocity = "Surge_Sway_Heave_YawRate";
 }
+
 namespace inputs {
 
 namespace ID {

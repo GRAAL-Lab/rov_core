@@ -19,10 +19,11 @@ namespace rov {
 
 struct ControlData {
     ctb::LatLong inertialF_linearPosition;
+    double inertialF_altitude;
     rml::EulerRPY bodyF_angularPosition;
     Eigen::Vector3d bodyF_linearVelocity;
     Eigen::Vector3d bodyF_angularVelocity;
-    Eigen::Vector2d inertialF_waterCurrent;
+    Eigen::Vector3d inertialF_waterCurrent;
     bool radioControllerEnabled;
 
     ControlData() : radioControllerEnabled(false) {}

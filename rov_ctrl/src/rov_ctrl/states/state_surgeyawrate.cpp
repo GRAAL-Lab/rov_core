@@ -5,7 +5,7 @@ namespace rov {
 
 namespace states {
 
-    StateSurgeYawRate::StateSurgeYawRate() : goalSurge(0.0), goalYawRate (0.0)
+    StateSurgeYawRate::StateSurgeYawRate() : goalSurge(0.0), goalSway(0.0), goalHeave(0.0), goalRollRate(0.0), goalPitchRate(0.0), goalYawRate(0.0)
     {
     }
 
@@ -16,9 +16,13 @@ namespace states {
         tStart_ = std::chrono::system_clock::now();
     }
 
-    void StateSurgeYawRate::SetSurgeYawRate(double surge, double yawrate)
+    void StateSurgeYawRate::SetSurgeYawRate(double surge, double sway, double heave, double rollrate, double pitchrate, double yawrate)
     {
         goalSurge = surge;
+        goalSway = sway;
+        goalHeave = heave;
+        goalRollRate = rollrate;
+        goalPitchRate = pitchrate;
         goalYawRate = yawrate;
     }
 
@@ -43,7 +47,10 @@ namespace states {
         // Set tasks
         /*safetyBoundariesTask_ = std::dynamic_pointer_cast<ikcl::SafetyBoundaries>(tasksMap.find(ulisse::task::asvSafetyBoundaries)->second.task);
         absoluteAxisAlignmentSafetyTask_ = std::dynamic_pointer_cast<ikcl::AbsoluteAxisAlignment>(tasksMap.find(ulisse::task::asvAbsoluteAxisAlignmentSafety)->second.task);
-*/
+        */
+        linearVelocityTask_ = std::dynamic_pointer_cast<ikcl::LinearVelocity>(tasksMap.find(rov::task::rovLinearVelocity)->second.task);
+        angularVelocityTask_ = std::dynamic_pointer_cast<ikcl::AngularVelocity>(tasksMap.find(rov::task::rovAngularVelocity)->second.task);
+
         if (actionManager->SetAction(rov::action::velocity, true)) {
             return fsm::ok;
         } else {
@@ -94,14 +101,21 @@ namespace states {
 //        // Set the gain of the cartesian distance task
 //        safetyBoundariesTask_->TaskParameter().gain = taskGainSafety * safetyBoundariesTask_->TaskParameter().conf_gain;
 
+        // Set a velocity to point to the circle in case of the catamaran  slips away.
+        linearVelocityTask_->SetReferenceRate(Eigen::Vector3d(goalSurge, goalSway, goalHeave), robotModel->BodyFrameID());
 
+        // Slow-down and turn: compute the gain to modify the exernal activation function of linear velocity task.
+        double taskGain = 1;
+        linearVelocityTask_->ExternalActivationFunction() = taskGain * Eigen::MatrixXd::Identity(linearVelocityTask_->TaskSpace(), linearVelocityTask_->TaskSpace());
 
+        angularVelocityTask_->SetReferenceRate(Eigen::Vector3d(goalRollRate, goalPitchRate, goalYawRate), robotModel->BodyFrameID());
+        angularVelocityTask_->ExternalActivationFunction() = taskGain * Eigen::MatrixXd::Identity(angularVelocityTask_->TaskSpace(), angularVelocityTask_->TaskSpace());
 
 
         return fsm::ok;
     }
 } // namespace states
-} // namespace ulisse
+} // namespace rov
 
 
 

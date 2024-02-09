@@ -39,7 +39,7 @@ DynamicRovController::DynamicRovController(std::string file_name)
     //computedTorqueControlPub_ = this->create_publisher<ulisse_msgs::msg::DynamicPidControl>(ulisse_msgs::topicnames::computed_torque_control, 1);
 
     //Service
-    srvUserInput_ = this->create_service<rov_msgs::srv::UserInput>(rov_msgs::topicnames::user_input_service, std::bind(&DynamicRovController::CommandsHandler, this, _1, _2, _3));
+    //srvUserInput_ = this->create_service<rov_msgs::srv::UserInput>(rov_msgs::topicnames::user_input_service, std::bind(&DynamicRovController::CommandsHandler, this, _1, _2, _3));
 
     dcl_conf = std::make_shared<DCLConfiguration>();
 
@@ -203,6 +203,7 @@ void DynamicRovController::Run()
                 MoveByForce(tau,thruster_voltage_);
                 motion_direction = rov::inputs::ID::hold;
             }
+            /*
             else if (vehicleStatus.vehicle_state == rov::states::ID::velocity){
 
                 SetDirectionVector(dirV);
@@ -214,21 +215,36 @@ void DynamicRovController::Run()
                 Eigen::Vector3d bodyF_dirV;
                 bodyF_dirV = bodyF_R_worldF * dirV.head(3);
 
-                tau << pidSurgeCP_.Compute(bodyF_dirV[0] * referenceVelocities.desired_surge, relSurgeFbk),
-                    pidSwayCP_.Compute(bodyF_dirV[1] * referenceVelocities.desired_sway, relSwayFbk),
-                    pidHeaveCP_.Compute(bodyF_dirV[2] * referenceVelocities.desired_heave, relHeaveFbk),
-                    pidRollRateCP_.Compute(dirV[3] * referenceVelocities.desired_roll_rate, rollRateFbk),
-                    pidPitchRateCP_.Compute(dirV[4] * referenceVelocities.desired_pitch_rate, pitchRateFbk),
-                    pidYawRateCP_.Compute(dirV[5] * referenceVelocities.desired_yaw_rate, yawRateFbk);
+                tau << pidSurgeCP_.Compute(referenceVelocities.desired_surge, relSurgeFbk),
+                    pidSwayCP_.Compute(referenceVelocities.desired_sway, relSwayFbk),
+                    pidHeaveCP_.Compute(referenceVelocities.desired_heave, relHeaveFbk),
+                    pidRollRateCP_.Compute(referenceVelocities.desired_roll_rate, rollRateFbk),
+                    pidPitchRateCP_.Compute(referenceVelocities.desired_pitch_rate, pitchRateFbk),
+                    pidYawRateCP_.Compute(referenceVelocities.desired_yaw_rate, yawRateFbk);
 
-                std::cout << "directionVector " << dirV << std::endl;
-                std::cout << "pidSurgeCP_ Kp " << pidSurgeCP_.GetGains().Kp << std::endl;
-                std::cout << "pidSurgeCP_ Ki " << pidSurgeCP_.GetGains().Ki << std::endl;
-                std::cout << "pidSurgeCP_ Kd " << pidSurgeCP_.GetGains().Kd << std::endl;
+
 
                 thruster_voltage_ = rovModel_.ThusterAllocation(tau);
             }
-            else{}
+            else if (vehicleStatus.vehicle_state == rov::states::ID::latlongalt){
+                tau << pidSurgeCP_.Compute(referenceVelocities.desired_surge, relSurgeFbk),
+                    pidSwayCP_.Compute(referenceVelocities.desired_sway, relSwayFbk),
+                    pidHeaveCP_.Compute(referenceVelocities.desired_heave, relHeaveFbk),
+                    pidRollRateCP_.Compute(referenceVelocities.desired_roll_rate, rollRateFbk),
+                    pidPitchRateCP_.Compute(referenceVelocities.desired_pitch_rate, pitchRateFbk),
+                    pidYawRateCP_.Compute(referenceVelocities.desired_yaw_rate, yawRateFbk);
+                thruster_voltage_ = rovModel_.ThusterAllocation(tau);
+            } */
+            else{
+                tau << pidSurgeCP_.Compute(referenceVelocities.desired_surge, relSurgeFbk),
+                    pidSwayCP_.Compute(referenceVelocities.desired_sway, relSwayFbk),
+                    pidHeaveCP_.Compute(referenceVelocities.desired_heave, relHeaveFbk),
+                    pidRollRateCP_.Compute(referenceVelocities.desired_roll_rate, rollRateFbk),
+                    pidPitchRateCP_.Compute(referenceVelocities.desired_pitch_rate, pitchRateFbk),
+                    pidYawRateCP_.Compute(referenceVelocities.desired_yaw_rate, yawRateFbk);
+
+                thruster_voltage_ = rovModel_.ThusterAllocation(tau);
+            }
 
             Eigen::Vector6d feedbackVel = Eigen::Vector6d::Zero();
 
