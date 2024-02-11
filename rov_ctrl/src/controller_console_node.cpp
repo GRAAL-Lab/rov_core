@@ -132,9 +132,11 @@ int main(int argc, char* argv[])
                 std::cout << "Sent Request to UserInput controller" << std::endl;
                 if (rclcpp::spin_until_future_complete(node, result_future) != rclcpp::FutureReturnCode::SUCCESS) {
                     RCLCPP_ERROR(node->get_logger(), "UserInput service call failed :(");
+                    std::cout << "No response" << std::endl;
                 } else {
                     auto result = result_future.get();
                     RCLCPP_INFO(node->get_logger(), "UserInput Service returned: %s", (result->res).c_str());
+                    std::cout << "Response Recieved" << std::endl;
                 }
             }
 
@@ -192,7 +194,7 @@ int main(int argc, char* argv[])
 
             //std::cout << "timeout [s] ";
             //std::cin >> serviceReq->sh_cmd.timeout.sec;
-            serviceReq->sh_cmd.timeout.nanosec = 0;
+            serviceReq->sh_cmd.timeout.sec = 10;
         } break;
         default:
             std::cout << "Unsupported choice! " << choice << std::endl;

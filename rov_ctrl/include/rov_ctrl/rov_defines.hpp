@@ -35,7 +35,7 @@ namespace action {
 const std::string goTo = "Move_To";
 const std::string halt = "Halt";
 const std::string hold = "Hold";
-const std::string velocity = "Surge_Sway_Heave_YawRate";
+const std::string velocity = "Surge_YawRate";
 }
 
 namespace inputs {
@@ -76,7 +76,7 @@ const std::string halt = "Halt";
 const std::string latlongalt = "Move_To";
 const std::string hold = "Hold";
 //const std::string surgeheading = "Surge_Heading";
-const std::string velocity = "Surge_Sway_Heave_YawRate";
+const std::string velocity = "Surge_YawRate";
 //const std::string pathfollow = "Path_Following";
 }
 }

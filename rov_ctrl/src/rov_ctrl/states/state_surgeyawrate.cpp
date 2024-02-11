@@ -29,16 +29,16 @@ namespace states {
     bool StateSurgeYawRate::ConfigureStateFromFile(libconfig::Config& confObj)
     {
         (void) confObj;
-        //const libconfig::Setting& root = confObj.getRoot();
-/*        const libconfig::Setting& states = root["states"];
+        const libconfig::Setting& root = confObj.getRoot();
+        const libconfig::Setting& states = root["states"];
 
-        const libconfig::Setting& state = states.lookup(ulisse::states::ID::surgeyawrate);
+        const libconfig::Setting& state = states.lookup(rov::states::ID::velocity);
 
         if (!ctb::GetParam(state, maxYawRateError_, "maxYawRateError"))
             return false;
         if (!ctb::GetParam(state, minYawRateError_, "minYawRateError"))
             return false;
-*/
+
         return true;
     }
 
@@ -65,10 +65,10 @@ namespace states {
         tNow_ = std::chrono::system_clock::now();
         totalElapsed_ = std::chrono::duration_cast<std::chrono::seconds>(tNow_ - tStart_);
 
-        if (timeout != 0 && totalElapsed_.count() > timeout) {
-            std::cout << "Surge/YawRate Timeout reached!" << std::endl;
-            fsm_->ExecuteCommand(rov::commands::ID::halt);
-        }
+        //if (timeout != 0 && totalElapsed_.count() > timeout) {
+        //    std::cout << "Surge/YawRate Timeout reached!" << std::endl;
+        //    fsm_->ExecuteCommand(rov::commands::ID::halt);
+        //}
 
         // SafetyBoundaries task: it's a velocity task base on the distance from the boundaries. The behaviour that has to achive is align to
         // a desired escape directon and to generate a desired velocity. To do this we use the task AbsoluteAxisAlignment to cope with

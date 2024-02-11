@@ -55,6 +55,7 @@ class ROVController : public rclcpp::Node {
 
     ///TASKS
     std::shared_ptr<ikcl::LinearVelocity> rovLinearVelocity_;
+    std::shared_ptr<ikcl::AngularVelocity> rovAngularVelocity_; //new for ROV
     std::shared_ptr<ikcl::LinearVelocity> rovLinearVelocityHold_;
     std::shared_ptr<ikcl::AlignToTarget> rovAngularPosition_;
     std::shared_ptr<ikcl::CartesianDistance> rovCartesianDistance_;
@@ -100,6 +101,7 @@ class ROVController : public rclcpp::Node {
     std::string current_state;
     int motion_direction;
     Eigen::Vector6d dirV; Eigen::Vector3d bodyF_dirV;
+    Eigen::Vector6d reference_speed;
 
     rov_msgs::msg::ReferenceVelocities referenceVelocities_;
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;

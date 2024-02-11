@@ -52,7 +52,7 @@ bool SafetyBoundaries::ConfigFromFile(libconfig::Config& confObj)
     //std::cout << "== decreasingBellShapeParameter_.xmax = " << decreasingBellShapeParameter_.xmax << std::endl;
     std::cout << "Enable:" << taskParameter_.taskEnable << std::endl;
 
-    std::cout << "ASV_SB Centroid: " << centroid_.latitude << ", " << centroid_.longitude << std::endl;
+    std::cout << "ROV_SB Centroid: " << centroid_.latitude << ", " << centroid_.longitude << std::endl;
 
     return true;
 }
