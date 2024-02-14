@@ -120,6 +120,12 @@ ROVController::ROVController(std::string conf_filename)
     taskInfo_.taskPub = this->create_publisher<rov_msgs::msg::TaskStatus>(rov_msgs::topicnames::task_linear_velocity_hold, 1);
     tasksMap_.insert(std::make_pair(rov::task::rovLinearVelocityHold, taskInfo_));
 
+    // ROV CONTROL DISTANCE HOLD
+    rovCartesianDistanceHold_ = std::make_shared<ikcl::CartesianDistance>(ikcl::CartesianDistance(rov::task::rovCartesianDistanceHold, robotModel_, rov::robotModelID::blueROV));
+    taskInfo_.task = rovCartesianDistanceHold_;
+    taskInfo_.taskPub = this->create_publisher<rov_msgs::msg::TaskStatus>(rov_msgs::topicnames::task_cartesian_distance_hold, 1);
+    tasksMap_.insert(std::make_pair(rov::task::rovCartesianDistanceHold, taskInfo_));
+
     // Service
     //srvUserInput_ = this->create_service<rov_msgs::srv::command>(rov_msgs::topicnames::user_input_service, std::bind(&ROVController::CommandsHandler, this, _1, _2, _3));
     srvControlCommand_ = this->create_service<rov_msgs::srv::ControlCommand>(rov_msgs::topicnames::control_cmd_service, std::bind(&ROVController::CommandsHandler, this, _1, _2, _3));
@@ -145,7 +151,7 @@ ROVController::ROVController(std::string conf_filename)
     SetUpFSM();
 
 
-    current_state = rov::states::ID::hold;
+    current_state = rov::states::ID::halt;
     std::cout << "initial state: " << current_state << std::endl;
 
     boundariesSet_ = true;
@@ -336,7 +342,7 @@ void ROVController::SetUpFSM()
             uFsm_.EnableCommandInState(state.first, command.first, true);
         }
     }
-    uFsm_.SetInitState(rov::states::ID::hold);
+    uFsm_.SetInitState(rov::states::ID::halt);
 }
 
 
@@ -441,7 +447,7 @@ void ROVController::PublishControl(){
         referenceVelocities_.desired_yaw_rate = yTpik_[5];
 
         referenceVelocitiesPub_->publish(referenceVelocities_);
-        std::cout<< "Tpik =  "<< yTpik_<< std::endl;
+        //std::cout<< "Tpik =  "<< yTpik_<< std::endl;
     }
 
 }
@@ -469,8 +475,14 @@ void ROVController::CommandsHandler(const std::shared_ptr<rmw_request_id_t> requ
         PublishLog("Received Command Halt");
     }
     else if (request->command_type == rov::commands::ID::hold) {
+        //ctb::LatLong a;
+        //a.latitude = ctrlData_->inertialF_linearPosition.longitude;
+        //a.longitude = ctrlData_->inertialF_linearPosition.latitude;
         commandHold_.SetPositionToHold(ctrlData_->inertialF_linearPosition, ctrlData_->inertialF_altitude);
         std::cout << "Received Command Hold" << std::endl;
+        //std::cout << std::fixed;
+        //std::cout << std::setprecision(14);
+        //std::cout<< "inertialF_linearPosition = " << ctrlData_->inertialF_linearPosition <<" altitude = " << ctrlData_->inertialF_altitude<< std::endl;
         current_state = rov::states::ID::hold;
     }
     else if (request->command_type == rov::commands::ID::latlongalt) {
@@ -645,21 +657,24 @@ void ROVController::PublishTF(){
 
     //t_stamp_goals.header.stamp = this->get_clock()->now();
     t_stamp_goals.header.frame_id = "world";
-    t_stamp_goals.child_frame_id = "GOAL";
+
 
     if (uFsm_.GetCurrentStateName() == rov::states::ID::hold) {
         Eigen::Vector3d goal_pos;
+        t_stamp_goals.child_frame_id = "Hold";
         ctb::LatLong2LocalUTM(stateHold_->positionToHold, stateHold_->altitudeToHold, centroidLocation_, goal_pos);
-        t_stamp_goals.transform.translation.x = goal_pos.x();
-        t_stamp_goals.transform.translation.y = goal_pos.y();
-        t_stamp_goals.transform.translation.z = goal_pos.z();
-        t_stamp_goals.transform.rotation.x = 1.0;
+        t_stamp_goals.transform.translation.x = goal_pos.y();
+        t_stamp_goals.transform.translation.y = goal_pos.x();
+        t_stamp_goals.transform.translation.z = goal_pos.z();        
+        t_stamp_goals.transform.rotation.x = 0.0;
         t_stamp_goals.transform.rotation.y = 0.0;
         t_stamp_goals.transform.rotation.z = 0.0;
-        t_stamp_goals.transform.rotation.w = 0.0;
+        t_stamp_goals.transform.rotation.w = 1.0;
+        tf_broadcaster_->sendTransform(t_stamp_goals);
 
     } else if (uFsm_.GetCurrentStateName() == rov::states::ID::latlongalt) {
         Eigen::Vector3d goal_pos;
+        t_stamp_goals.child_frame_id = "GOAL";
         ctb::LatLong2LocalUTM(stateLatLong_->goalPosition, stateLatLong_->goalAltitude, centroidLocation_, goal_pos);
         t_stamp_goals.transform.translation.x = goal_pos.x();
         t_stamp_goals.transform.translation.y = goal_pos.y();
@@ -670,9 +685,10 @@ void ROVController::PublishTF(){
         t_stamp_goals.transform.rotation.y = q.y();
         t_stamp_goals.transform.rotation.z = q.z();
         t_stamp_goals.transform.rotation.w = q.w();
+        tf_broadcaster_->sendTransform(t_stamp_goals);
 
     }
-    tf_broadcaster_->sendTransform(t_stamp_goals);
+
 }
 
 void ROVController::PublishTasksInfo()

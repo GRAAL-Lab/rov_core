@@ -27,6 +27,7 @@ const std::string rovCartesianDistanceHold = "ROV_Cartesian_Distance_Hold";
 
 const std::string rovAbsoluteAxisAlignmentHold = "ROV_Absolute_Axis_Alignment_Hold";
 const std::string rovLinearVelocityHold = "ROV_Linear_Velocity_Hold";
+//const std::string rovCartesianDistanceHold = "ROV_Cartesian_Distance_Hold";
 
 }
 

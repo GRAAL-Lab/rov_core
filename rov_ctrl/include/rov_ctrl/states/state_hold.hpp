@@ -21,8 +21,9 @@ namespace states {
     protected:
         std::shared_ptr<ikcl::AbsoluteAxisAlignment> absoluteAxisAlignmentTask_;
         std::shared_ptr<ikcl::LinearVelocity> linearVelocityTask_;
+        std::shared_ptr<ikcl::CartesianDistance> cartesianDistanceTask_;
         double minWaterCurrent_, maxWaterCurrent_;
-        double maxSurgeComeback2HoldAcceptanceRadius_;
+        double maxSurgeComeback2Hold_;
         HysteresisState hysteresisState_;
 
     public:

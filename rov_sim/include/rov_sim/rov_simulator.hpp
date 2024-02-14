@@ -23,8 +23,7 @@
 #include "ulisse_msgs/msg/thrusters_reference.hpp"
 
 #include "ulisse_sim/simulator_defines.hpp" */
-//home/graal/ros2_ws/src/marine_vehicle_models/surface_vehicle_model/include/surface_vehicle_model.hpp
-//home/graal/ros2_ws/src/marine_vehicle_models/underwater_vehicle_model/include/underwater_vehicle_model.hpp
+
 
 #include "rov_sim/simulator_defines.hpp"
 #include "underwater_vehicle_model/underwater_vehicle.hpp"
@@ -41,9 +40,9 @@
 #include "tf2_ros/static_transform_broadcaster.h"
 #include "tf2_ros/transform_broadcaster.h"
 
-#include "GeographicLib/Geodesic.hpp"
-#include "eigen3/Eigen/Dense"
-#include "rml/RML.h"
+//#include "GeographicLib/Geodesic.hpp"
+//#include "eigen3/Eigen/Dense"
+//#include "rml/RML.h"
 
 #include "rov_msgs/srv/user_input.hpp"
 

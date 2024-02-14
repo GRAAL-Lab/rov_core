@@ -198,11 +198,13 @@ void DynamicRovController::Run()
         } else if (dcl_conf->ctrlMode == ControlMode::ClassicPIDControl) {
             Eigen::Vector6d dirV;
             dirV.setZero();
+            /*
             if(vehicleStatus.vehicle_state == rov::states::ID::hold){
                 Eigen::Vector6d tau; tau.setZero();
                 MoveByForce(tau,thruster_voltage_);
                 motion_direction = rov::inputs::ID::hold;
             }
+            */
             /*
             else if (vehicleStatus.vehicle_state == rov::states::ID::velocity){
 
@@ -235,7 +237,7 @@ void DynamicRovController::Run()
                     pidYawRateCP_.Compute(referenceVelocities.desired_yaw_rate, yawRateFbk);
                 thruster_voltage_ = rovModel_.ThusterAllocation(tau);
             } */
-            else{
+            //else{
                 tau << pidSurgeCP_.Compute(referenceVelocities.desired_surge, relSurgeFbk),
                     pidSwayCP_.Compute(referenceVelocities.desired_sway, relSwayFbk),
                     pidHeaveCP_.Compute(referenceVelocities.desired_heave, relHeaveFbk),
@@ -244,7 +246,7 @@ void DynamicRovController::Run()
                     pidYawRateCP_.Compute(referenceVelocities.desired_yaw_rate, yawRateFbk);
 
                 thruster_voltage_ = rovModel_.ThusterAllocation(tau);
-            }
+            //}
 
             Eigen::Vector6d feedbackVel = Eigen::Vector6d::Zero();
 

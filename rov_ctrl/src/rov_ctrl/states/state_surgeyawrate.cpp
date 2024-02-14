@@ -93,23 +93,23 @@ namespace states {
         // we activate the the cartesian distance through the gain based on a bell-shaped function on the heading error
 
         // Compute the heading error
-//        double headingErrorsafety = absoluteAxisAlignmentSafetyTask_->ControlVariable().norm();
+        //double headingErrorsafety = absoluteAxisAlignmentSafetyTask_->ControlVariable().norm();
 
-//        // Compute the gain of the safety task
-//        double taskGainSafety = rml::DecreasingBellShapedFunction(minHeadingError_, maxHeadingError_, 0, 1.0, headingErrorsafety);
+        // Compute the gain of the safety task
+        //double taskGainSafety = rml::DecreasingBellShapedFunction(minHeadingError_, maxHeadingError_, 0, 1.0, headingErrorsafety);
 
-//        // Set the gain of the cartesian distance task
-//        safetyBoundariesTask_->TaskParameter().gain = taskGainSafety * safetyBoundariesTask_->TaskParameter().conf_gain;
+        // Set the gain of the cartesian distance task
+        //safetyBoundariesTask_->TaskParameter().gain = taskGainSafety * safetyBoundariesTask_->TaskParameter().conf_gain;
 
         // Set a velocity to point to the circle in case of the catamaran  slips away.
         linearVelocityTask_->SetReferenceRate(Eigen::Vector3d(goalSurge, goalSway, goalHeave), robotModel->BodyFrameID());
-
+        linearVelocityTask_->Update();
         // Slow-down and turn: compute the gain to modify the exernal activation function of linear velocity task.
         double taskGain = 1;
-        linearVelocityTask_->ExternalActivationFunction() = taskGain * Eigen::MatrixXd::Identity(linearVelocityTask_->TaskSpace(), linearVelocityTask_->TaskSpace());
+        //linearVelocityTask_->ExternalActivationFunction() = taskGain * Eigen::MatrixXd::Identity(linearVelocityTask_->TaskSpace(), linearVelocityTask_->TaskSpace());
 
         angularVelocityTask_->SetReferenceRate(Eigen::Vector3d(goalRollRate, goalPitchRate, goalYawRate), robotModel->BodyFrameID());
-        angularVelocityTask_->ExternalActivationFunction() = taskGain * Eigen::MatrixXd::Identity(angularVelocityTask_->TaskSpace(), angularVelocityTask_->TaskSpace());
+        //angularVelocityTask_->ExternalActivationFunction() = taskGain * Eigen::MatrixXd::Identity(angularVelocityTask_->TaskSpace(), angularVelocityTask_->TaskSpace());
 
 
         return fsm::ok;

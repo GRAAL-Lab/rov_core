@@ -115,8 +115,8 @@ ament_target_dependencies(kinematic_control_node rclcpp std_msgs rov_msgs rml)
 target_link_libraries(kinematic_control_node rml rov_kinematic_ctrl_lib ${JSONCPP_LIBRARIES})
 
 add_executable(controller_console_node src/controller_console_node.cpp)
-ament_target_dependencies(controller_console_node rclcpp std_msgs rov_msgs rml)
-target_link_libraries(controller_console_node rml rov_kinematic_ctrl_lib)
+ament_target_dependencies(controller_console_node rclcpp std_msgs rov_msgs rml ctrl_toolbox)
+target_link_libraries(controller_console_node rml rov_kinematic_ctrl_lib ${JSONCPP_LIBRARIES} ctrl_toolbox)
 
 add_executable(dynamic_control_node src/dynamic_control_node.cpp)
 ament_target_dependencies(dynamic_control_node rclcpp std_msgs rov_msgs rml ament_index_cpp ctrl_toolbox)

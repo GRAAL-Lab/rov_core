@@ -99,7 +99,11 @@ namespace states {
          */
 
         ctb::DistanceAndAzimuthRad(ctrlData->inertialF_linearPosition, goalPosition, goalDistance, goalHeading);
-        double goalDistance_z = abs(ctrlData->inertialF_altitude - goalAltitude);
+        double goalDistance_x, goalDistance_y, goalDistance_z;
+        goalDistance_x = goalDistance * cos(goalHeading);
+        goalDistance_y = goalDistance * sin(goalHeading);
+        goalDistance_z = goalAltitude - ctrlData->inertialF_altitude;
+        goalDistance = sqrt (pow(goalDistance,2) + pow(goalDistance_z,2));
         // }
 
         //double finalGoalDistance, finalGoalHeading;
@@ -108,12 +112,13 @@ namespace states {
         if (goalDistance < acceptanceRadius) {
             std::cout << "*** GOAL REACHED! ***" << std::endl;
             fsm_->EmitEvent(rov::events::names::neargoalposition, rov::events::priority::medium);
+            cartesianDistanceTask_->ExternalActivationFunction() = 0.0 * Eigen::MatrixXd::Identity(cartesianDistanceTask_->TaskSpace(), cartesianDistanceTask_->TaskSpace());
         } else {
 
             //Set the distance vector to the target
-            cartesianDistanceTask_->SetTargetDistance(Eigen::Vector3d(goalDistance * cos(goalHeading), goalDistance * sin(goalHeading), goalDistance_z), rml::FrameID::WorldFrame);
+            cartesianDistanceTask_->SetTargetDistance(Eigen::Vector3d(goalDistance_x, goalDistance_y, goalDistance_z), rml::FrameID::WorldFrame);
             //Set the align vector to the target
-            alignToTargetTask_->SetTargetDistance(Eigen::Vector3d(goalDistance * cos(goalHeading), goalDistance * sin(goalHeading), 0), rml::FrameID::WorldFrame);
+            alignToTargetTask_->SetTargetDistance(Eigen::Vector3d(goalDistance_x, goalDistance_y, 0), rml::FrameID::WorldFrame);
 
             //Set the vector that has to been align to the distance vector
             alignToTargetTask_->SetRobotAxis2Align(Eigen::Vector3d(1, 0, 0), rov::robotModelID::blueROV);

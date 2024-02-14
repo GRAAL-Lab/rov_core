@@ -1,9 +1,9 @@
-#include <cmath>
-#include <iomanip>
+//#include <cmath>
+//#include <iomanip>
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <libconfig.h++>
 
-#include "GeographicLib/UTMUPS.hpp"
+//#include "GeographicLib/UTMUPS.hpp"
 #include "rov_msgs/topicnames.hpp"
 
 #include "rov_sim/rov_simulator.hpp"
@@ -50,7 +50,7 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     // setting initial location of the ROV
     std::cout << "centroid" << centroidLocation_ << std::endl;
     vehiclePos_ = vehiclePreviousPos_ = centroidLocation_;
-    altitude_ = Pre_altitude_ = 0.5;
+    altitude_ = Pre_altitude_ = 0.0;
     previous_bodyF_orientation_.Roll(0.0); bodyF_orientation_.Roll(0.0);
     previous_bodyF_orientation_.Pitch(0.0); bodyF_orientation_.Pitch(0.0);
     previous_bodyF_orientation_.Yaw(0.0); bodyF_orientation_.Yaw(0.0);
@@ -166,7 +166,7 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     worldF_cable_ending =  worldF_R_bodyF_ * bodyF_cable_ending_;
     worldF_cable_ending =  worldF_cable_ending + pos_initial;
     ctb::LocalUTM2LatLong(worldF_cable_ending, centroidLocation_, cableEndPos_, cableEnd_altitude_);
-    rovModel_.SetCableLength(5.0);
+    rovModel_.SetCableLength(4.0);
 
     Eigen::Vector3d worldF_cable_starting;
     ctb::LatLong cable_starting_, cable_ending_;
@@ -604,6 +604,8 @@ void VehicleSimulator::SimulateSensors()
     groundTruthMsg_.gyro_bias[0] = bx;
     groundTruthMsg_.gyro_bias[1] = by;
     groundTruthMsg_.gyro_bias[2] = bz;
+
+    //std::cout<< "vehiclePos_ " << vehiclePos_<< " altitude "<<altitude_<< std::endl;
 
     forcesMsg_.stamp.sec = now_stamp_secs;
     forcesMsg_.stamp.nanosec = now_stamp_nanosecs;

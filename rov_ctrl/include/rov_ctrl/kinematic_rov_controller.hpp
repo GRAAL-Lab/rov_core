@@ -59,6 +59,7 @@ class ROVController : public rclcpp::Node {
     std::shared_ptr<ikcl::LinearVelocity> rovLinearVelocityHold_;
     std::shared_ptr<ikcl::AlignToTarget> rovAngularPosition_;
     std::shared_ptr<ikcl::CartesianDistance> rovCartesianDistance_;
+    std::shared_ptr<ikcl::CartesianDistance> rovCartesianDistanceHold_;
     std::shared_ptr<ikcl::SafetyBoundaries> rovSafetyBoundaries_;
     std::shared_ptr<ikcl::AbsoluteAxisAlignment> rovAbsoluteAxisAlignment_;
     std::shared_ptr<ikcl::AbsoluteAxisAlignment> rovAbsoluteAxisAlignmentSafety_;
@@ -86,8 +87,6 @@ class ROVController : public rclcpp::Node {
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr genericLogPub_;
 
     //rclcpp::Client<rov_msgs::srv::UserInput>::SharedPtr client = node->create_client<rov_msgs::srv::UserInput>("user_input");
-
-    //ctb::LatLong centroidLocation_;
 
     //std::shared_ptr<ControlData> ctrlData_;
     //std::shared_ptr<ctb::LatLong> vehiclePosition_;

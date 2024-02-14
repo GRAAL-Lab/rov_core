@@ -5,6 +5,7 @@
 
 #include <cstdio>
 #include <iostream>
+#include <eigen3/Eigen/Dense>
 #include <rclcpp/rclcpp.hpp>
 
 #include "rov_ctrl/rov_defines.hpp"
@@ -13,6 +14,11 @@
 #include "rov_msgs/srv/user_input.hpp"
 #include "rov_msgs/topicnames.hpp"
 #include "ulisse_msgs/terminal_utils.hpp"
+//#include "GeographicLib/UTMUPS.hpp"ù
+#include "GeographicLib/Geodesic.hpp"
+//#include "rml/RML.h"
+#include <rml/RML.h>
+#include "rov_ctrl/ctrl_data_structs.hpp"
 
 using namespace rov;
 using namespace std::chrono_literals;
@@ -170,6 +176,7 @@ int main(int argc, char* argv[])
         } break;
         case 3: {
             serviceReq->command_type = rov::commands::ID::latlongalt;
+            /*
             std::cout << "latitude [m]: ";
             std::cin >> serviceReq->moveto_cmd.goal.latlong.latitude;
             std::cout << "longitude [m]: ";
@@ -178,6 +185,25 @@ int main(int argc, char* argv[])
             std::cin >> serviceReq->moveto_cmd.goal.altitude;
             //std::cout << "acceptanceRadius: ";
             //std::cin >> serviceReq->moveto_cmd.acceptance_radius;
+            */
+            Eigen::Vector3d goal_cartesian;
+            std::cout << "x [m]: ";
+            std::cin >> goal_cartesian.x();
+            std::cout << "y [m]: ";
+            std::cin >> goal_cartesian.y();
+            std::cout << "z [m]: ";
+            std::cin >> goal_cartesian.z();
+
+            ctb::LatLong centroidLocation_;
+            centroidLocation_.latitude = 44.0956;
+            centroidLocation_.longitude = 9.8631;
+            ctb::LatLong goal_latlong; double goal_altitude;
+
+            ctb::LocalUTM2LatLong(goal_cartesian, centroidLocation_, goal_latlong, goal_altitude);
+            serviceReq->moveto_cmd.goal.latlong.latitude = goal_latlong.latitude;
+            serviceReq->moveto_cmd.goal.latlong.longitude = goal_latlong.longitude;
+            serviceReq->moveto_cmd.goal.altitude = goal_altitude;
+
         } break;
         case 4: {
             serviceReq->command_type = rov::commands::ID::velocity;
