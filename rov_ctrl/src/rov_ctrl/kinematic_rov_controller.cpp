@@ -676,8 +676,8 @@ void ROVController::PublishTF(){
         Eigen::Vector3d goal_pos;
         t_stamp_goals.child_frame_id = "GOAL";
         ctb::LatLong2LocalUTM(stateLatLong_->goalPosition, stateLatLong_->goalAltitude, centroidLocation_, goal_pos);
-        t_stamp_goals.transform.translation.x = goal_pos.x();
-        t_stamp_goals.transform.translation.y = goal_pos.y();
+        t_stamp_goals.transform.translation.x = goal_pos.y();
+        t_stamp_goals.transform.translation.y = goal_pos.x();
         t_stamp_goals.transform.translation.z = goal_pos.z();
         tf2::Quaternion q;
         q.setRPY(0.0, 0.0, stateLatLong_->goalHeading);

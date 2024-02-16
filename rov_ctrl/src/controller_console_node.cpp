@@ -188,9 +188,9 @@ int main(int argc, char* argv[])
             */
             Eigen::Vector3d goal_cartesian;
             std::cout << "x [m]: ";
-            std::cin >> goal_cartesian.x();
-            std::cout << "y [m]: ";
             std::cin >> goal_cartesian.y();
+            std::cout << "y [m]: ";
+            std::cin >> goal_cartesian.x();
             std::cout << "z [m]: ";
             std::cin >> goal_cartesian.z();
 
@@ -203,6 +203,7 @@ int main(int argc, char* argv[])
             serviceReq->moveto_cmd.goal.latlong.latitude = goal_latlong.latitude;
             serviceReq->moveto_cmd.goal.latlong.longitude = goal_latlong.longitude;
             serviceReq->moveto_cmd.goal.altitude = goal_altitude;
+            serviceReq->moveto_cmd.acceptance_radius = 0.25;
 
         } break;
         case 4: {

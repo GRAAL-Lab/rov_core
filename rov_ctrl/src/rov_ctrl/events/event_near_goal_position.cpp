@@ -12,6 +12,7 @@ namespace events {
 
         if (goToHold_) {
             stateHold_->positionToHold = ctrlData_->inertialF_linearPosition;
+            stateHold_->altitudeToHold = ctrlData_->inertialF_altitude;
             fsm_->SetNextState("Hold");
         } else {
             fsm_->SetNextState("Halt");

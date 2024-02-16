@@ -25,6 +25,8 @@ namespace states {
             return false;
         if (!ctb::GetParam(state, minHeadingError_, "minHeadingError"))
             return false;
+        if (!ctb::GetParam(state, acceptanceRadius, "acceptanceRadius"))
+            return false;
         return true;
     }
 
@@ -105,7 +107,7 @@ namespace states {
         goalDistance_z = goalAltitude - ctrlData->inertialF_altitude;
         goalDistance = sqrt (pow(goalDistance,2) + pow(goalDistance_z,2));
         // }
-
+        //std::cout << "goalDistance: "<<goalDistance << "acceptanceRadius: "<<acceptanceRadius<< "maxHeadingError_: "<<maxHeadingError_<< std::endl;
         //double finalGoalDistance, finalGoalHeading;
         //ctb::DistanceAndAzimuthRad(ctrlData->inertialF_linearPosition, goalPosition, finalGoalDistance, finalGoalHeading);
 
