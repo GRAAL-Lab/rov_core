@@ -93,8 +93,8 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     worldF_waterVelocity_(1) = 0.0;
     worldF_waterVelocity_(2) = 0.0;
 
-    n_p_ = 0;
-    n_s_ = 0;
+    //n_p_ = 0;
+    //n_s_ = 0;
 
     bodyF_projection_.setZero(6, 6);
 
@@ -108,9 +108,7 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     Eigen::Vector3d pos_initial;
     vel_initial.setZero();
 
-    std::cout << "centroid_" << centroid_ << std::endl;
     ctb::LatLong2LocalUTM(vehiclePos_, altitude_, centroidLocation_, pos_initial);
-    //ctb::LatLong2LocalUTM(eta_initial.segment(0,3), centroid_, startP_, altitude_);
     std::cout << "pos_init" << pos_initial << std::endl;
 
     // Initializing vectors and matrices
@@ -125,19 +123,6 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     else
         volt_cmd.resize(6,1);
     volt_cmd.setZero(); // volt should be between 0 to 1
-    //volt_cmd[0] = 0.05;
-    //volt_cmd[1] = 0.05;
-    //volt_cmd[2] = 0.02;
-    //volt_cmd[3] = -0.02;
-    //volt_cmd[4] = -0.02;
-    //volt_cmd[5] = 0.02;
-
-    // temp_frame in Rviz visualization
-    t_stamp_temp.transform.translation.x = 0;
-    t_stamp_temp.transform.translation.y = 0;
-    t_stamp_temp.transform.translation.z = 0;
-
-    //pos_initial.x()= pos_initial.x() + 1.0;
 
     // setting initial location of cable ends <world_F>
 
@@ -737,8 +722,6 @@ void VehicleSimulator::PublishSensors()
     microLoopCountPub_->publish(microLoopCountMsg_);
     simulatedSystemPub_->publish(groundTruthMsg_);
     forcesPub_->publish(forcesMsg_);
-
-    //tfPub_->publish(tt_);
     posePub_->publish(pt_);
 
 

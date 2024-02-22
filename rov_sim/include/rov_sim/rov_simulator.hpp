@@ -11,20 +11,6 @@
 #include "rov_msgs/msg/magnetometer.hpp"
 #include "rov_msgs/msg/pressure_data.hpp"
 
-/*#include "surface_vehicle_model/surfacevehiclemodel.hpp"
-
-#include "ulisse_msgs/msg/ambient_sensors.hpp"
-
-#include "ulisse_msgs/msg/dvl_data.hpp"
-#include "ulisse_msgs/msg/fog_data.hpp"
-
-
-#include "ulisse_msgs/msg/llc_thrusters.hpp"
-#include "ulisse_msgs/msg/thrusters_reference.hpp"
-
-#include "ulisse_sim/simulator_defines.hpp" */
-
-
 #include "rov_sim/simulator_defines.hpp"
 #include "underwater_vehicle_model/underwater_vehicle.hpp"
 
@@ -76,14 +62,14 @@ class VehicleSimulator : public rclcpp::Node {
     Eigen::Vector3d cableEndPosXY_;
 
 
-    Eigen::Matrix3d P_;
+    //Eigen::Matrix3d P_;
     Eigen::Matrix6d bodyF_projection_;
 
     Eigen::Vector3d bodyF_wFk_;
 
     double vehicleTrack_, vehicleSpeed_;
 
-    double n_p_, n_s_;
+    //double n_p_, n_s_;
     Eigen::VectorXd volt_cmd; // volt given to rov thrusters
 
     uint32_t timestamp_count_; // [200Hz counter]
@@ -93,11 +79,9 @@ class VehicleSimulator : public rclcpp::Node {
     rov_msgs::msg::SimulatedSystem groundTruthMsg_;
     rov_msgs::msg::Forces forcesMsg_;
 
-    geometry_msgs::msg::TransformStamped tt_;
     geometry_msgs::msg::PoseStamped pt_;
 
     geometry_msgs::msg::TransformStamped t_stamp;
-    geometry_msgs::msg::TransformStamped t_stamp_temp;
     geometry_msgs::msg::TransformStamped t_stamp_ROV;
 
     // service
@@ -115,17 +99,6 @@ class VehicleSimulator : public rclcpp::Node {
     rclcpp::Publisher<rov_msgs::msg::Magnetometer>::SharedPtr magnetometerPub_;
     rclcpp::Publisher<rov_msgs::msg::PressureData>::SharedPtr pressurePub_;
     /*
-
-    //ulisse_msgs::msg::IMUData orientusMgs_;
-    ulisse_msgs::msg::DVLData dvlMsg_;
-    ulisse_msgs::msg::FOGData fogMsg_;
-    ulisse_msgs::msg::AmbientSensors ambsensMsg_;
-
-    ulisse_msgs::msg::ThrustersReference appliedMotorRefMsg_;
-    ulisse_msgs::msg::LLCThrusters motorsDataMsg_;
-
-
-
     rclcpp::Publisher<ulisse_msgs::msg::DVLData>::SharedPtr dvlPub_;
     rclcpp::Publisher<ulisse_msgs::msg::FOGData>::SharedPtr fogPub_;
     rclcpp::Publisher<ulisse_msgs::msg::AmbientSensors>::SharedPtr ambsensPub_;
@@ -147,7 +120,6 @@ class VehicleSimulator : public rclcpp::Node {
 
     rclcpp::Subscription<rov_msgs::msg::ThrustersReference>::SharedPtr thrustersSub_;
 
-    //rclcpp::Publisher<geometry_msgs::msg::TransformStamped>::SharedPtr tfPub_;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr posePub_;
 
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
@@ -156,8 +128,6 @@ class VehicleSimulator : public rclcpp::Node {
     double hp_, hs_;
 
     bool realTime_;
-
-    ctb::LatLong centroid_ = { 0.0, 0.0 };          // The centroid for the convertion from/to cartesian/latlong
 
     Eigen::RotationMatrix worldF_R_bodyF_;
 
@@ -185,6 +155,8 @@ public:
     /*auto Altitude() const -> const rml::EulerRPY& { return bodyF_orientation_; }
     auto Latitude() const -> double { return latitude_; }
     auto Longitude() const -> double { return longitude_; }*/
+
+
 
     /**
      * @brief Set if simulation should run in Realtime or not
