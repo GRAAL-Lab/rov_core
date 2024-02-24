@@ -72,11 +72,8 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     //appliedMotorRefPub_ = this->create_publisher<ulisse_msgs::msg::ThrustersReference>(ulisse_msgs::topicnames::llc_thrusters_applied_perc, 1);
     simulatedSystemPub_ = this->create_publisher<rov_msgs::msg::SimulatedSystem>(rov_msgs::topicnames::simulated_system, 1);
     forcesPub_ = this->create_publisher<rov_msgs::msg::Forces>(rov_msgs::topicnames::forces, 1);
-    //tfPub_ = this->create_publisher<geometry_msgs::msg::TransformStamped>(rov_msgs::topicnames::tf, 1);
+    cableDataPub_ = this->create_publisher<rov_msgs::msg::CableData>(rov_msgs::topicnames::cable_data,1);
     posePub_= this->create_publisher<geometry_msgs::msg::PoseStamped>(rov_msgs::topicnames::posROV, 1);
-    //tf_static_broadcaster_ = this->create_publisher<tf2_ros::StaticTransformBroadcaster> (rov_msgs::topicnames::tf, 1);
-    //tf_static_broadcaster_ = std::make_shared<tf2_ros::StaticTransformBroadcaster>(this);
-    //tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
     tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
     tf_broadcaster_ROV = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
@@ -144,6 +141,7 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     //Eigen::RotationMatrix bodyF_R_worldF = worldF_R_bodyF_.transpose();
 
     rovModel_.InitializeMatrices(vel_initial, worldF_R_bodyF_);
+    rovModel_.InitializeCableWinch();
 
     bodyF_cable_ending_ = { -rovModel_.params.L / 2, 0.0, 0.0};
     //bodyF_cable_ending_ = { 1.0, 0.0, 0.0};
@@ -300,7 +298,7 @@ void VehicleSimulator::SimulateActuation()
 
     // Computing rov acceleration
     Eigen::Vector6d bodyF_cableForce;
-    float cable_length = rovModel_.GetCableCurrentLength();
+    float cable_length = rovModel_.GetCableReleasedLength();
     //Eigen::RotationMatrix bodyF_R_worldF = worldF_R_bodyF_.transpose();
 
     bodyF_cableForce = rovModel_.ComputeFcable_bodyF(cableS_pos_worldF, cableE_pos_worldF, cable_length, worldF_R_bodyF_);
@@ -345,7 +343,6 @@ void VehicleSimulator::SimulateActuation()
     worldF_waterVelocity_(2) = 0.0;
 
     // Integrating the acceleration to get the vehicle velocity
-    //bodyF_relativeVelocity_ = bodyF_relativeVelocity_ + bodyF_relativeAcceleration_projected_ * Ts_;
     bodyF_relativeVelocity_ = bodyF_relativeVelocity_ + bodyF_relativeAcceleration_ * Ts_;
 
     // Projecting the acceleration and velocity on the world frame
@@ -389,8 +386,6 @@ void VehicleSimulator::SimulateActuation()
     altitude_ = Pre_altitude_ + worldF_velocity_(2) * Ts_;
 
     ctb::LatLong2LocalNED(vehiclePos_, altitude_, centroidLocation_, ROVpose_);
-    //ROVpose_(0) = ROVprepose_(0) + worldF_velocity_(0) * Ts_;
-    //ROVpose_(1) = ROVprepose_(1) + worldF_velocity_(1) * Ts_;
     /*
     ROVpose_(0) = ROVprepose_(0) + worldF_velocity_(0) * Ts_;
     ROVpose_(1) = ROVprepose_(1) + worldF_velocity_(1) * Ts_;
@@ -411,6 +406,10 @@ void VehicleSimulator::SimulateActuation()
     worldF_cable_ending =  worldF_cable_ending + ROVpose_;
     ctb::LocalUTM2LatLong(worldF_cable_ending, centroidLocation_, cableEndPos_, cableEnd_altitude_);
     cableEndPosXY_ = worldF_cable_ending;
+
+    float v;
+    rovModel_.RunCableWinch(1.0, v);
+    rovModel_.UpdateCableLength(v, Ts_);
 }
 
 void VehicleSimulator::SimulateSensors()
@@ -656,30 +655,6 @@ void VehicleSimulator::SimulateSensors()
     pt_.pose.orientation.z = q2.z();
     pt_.pose.orientation.w = q2.w();
 
-    /*t_stamp_ROV.header.stamp = this->get_clock()->now();
-    t_stamp_ROV.header.frame_id = "world";
-    t_stamp_ROV.child_frame_id = "cable_fixed";
-    t_stamp_ROV.transform.translation.x = 1.0;
-    t_stamp_ROV.transform.translation.y = 1.0;
-    t_stamp_ROV.transform.translation.z = 0.0;
-    t_stamp_ROV.transform.rotation.x = 1.0;
-    t_stamp_ROV.transform.rotation.y = 0.0;
-    t_stamp_ROV.transform.rotation.z = 0.0;
-    t_stamp_ROV.transform.rotation.w = 0.0;
-    tf_broadcaster_ROV->sendTransform(t_stamp_ROV);
-
-    t_stamp_ROV.header.stamp = this->get_clock()->now();
-    t_stamp_ROV.header.frame_id = "ROV";
-    t_stamp_ROV.child_frame_id = "cable_ROV";
-    t_stamp_ROV.transform.translation.x = -0.4;
-    t_stamp_ROV.transform.translation.y = 0.0;
-    t_stamp_ROV.transform.translation.z = 0.0;
-    t_stamp_ROV.transform.rotation.x = 0.0;
-    t_stamp_ROV.transform.rotation.y = 0.0;
-    t_stamp_ROV.transform.rotation.z = 0.0;
-    t_stamp_ROV.transform.rotation.w = 1.0; // 0 or 1
-    tf_broadcaster_ROV->sendTransform(t_stamp_ROV);*/
-
     Eigen::Vector3d cableS_pos;
     ctb::LatLong2LocalUTM(cableStartPos_, cableStart_altitude_, centroidLocation_, cableS_pos);
     Eigen::Vector3d cableE_pos;
@@ -709,6 +684,13 @@ void VehicleSimulator::SimulateSensors()
     t_stamp_ROV.transform.rotation.w = q2.w();
     tf_broadcaster_ROV->sendTransform(t_stamp_ROV);
 
+    cableMsg_.stamp.sec = now_stamp_secs;
+    cableMsg_.stamp.nanosec = now_stamp_nanosecs;
+    cableMsg_.released_cable_length = rovModel_.GetCableReleasedLength();
+    cableMsg_.layer_n = rovModel_.GetCableLayer();
+    cableMsg_.winding_radius = rovModel_.GetCableWindingRadius();
+    cableMsg_.winch_rpm = rovModel_.GetWinchRPM();
+
 }
 
 void VehicleSimulator::AssignMessage(std::array<double,6>& msg,const Eigen::Vector6d& vector){
@@ -722,6 +704,7 @@ void VehicleSimulator::PublishSensors()
     microLoopCountPub_->publish(microLoopCountMsg_);
     simulatedSystemPub_->publish(groundTruthMsg_);
     forcesPub_->publish(forcesMsg_);
+    cableDataPub_->publish(cableMsg_);
     posePub_->publish(pt_);
 
 

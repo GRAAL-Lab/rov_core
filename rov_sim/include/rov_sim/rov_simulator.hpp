@@ -10,6 +10,7 @@
 #include "rov_msgs/msg/imu_data.hpp"
 #include "rov_msgs/msg/magnetometer.hpp"
 #include "rov_msgs/msg/pressure_data.hpp"
+#include "rov_msgs/msg/cable_data.hpp"
 
 #include "rov_sim/simulator_defines.hpp"
 #include "underwater_vehicle_model/underwater_vehicle.hpp"
@@ -78,6 +79,7 @@ class VehicleSimulator : public rclcpp::Node {
     rov_msgs::msg::MicroLoopCount microLoopCountMsg_;
     rov_msgs::msg::SimulatedSystem groundTruthMsg_;
     rov_msgs::msg::Forces forcesMsg_;
+    rov_msgs::msg::CableData cableMsg_;
 
     geometry_msgs::msg::PoseStamped pt_;
 
@@ -117,6 +119,7 @@ class VehicleSimulator : public rclcpp::Node {
     rclcpp::Publisher<rov_msgs::msg::SimulatedSystem>::SharedPtr simulatedSystemPub_;
     rclcpp::Publisher<rov_msgs::msg::MicroLoopCount>::SharedPtr microLoopCountPub_;
     rclcpp::Publisher<rov_msgs::msg::Forces>::SharedPtr forcesPub_;
+    rclcpp::Publisher<rov_msgs::msg::CableData>::SharedPtr cableDataPub_;
 
     rclcpp::Subscription<rov_msgs::msg::ThrustersReference>::SharedPtr thrustersSub_;
 
