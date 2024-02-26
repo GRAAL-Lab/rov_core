@@ -9,6 +9,7 @@ namespace states {
 
     class StateSurgeYawRate : public GenericState {
     protected:
+        std::shared_ptr<ikcl::AbsoluteAxisAlignment> absoluteAxisAlignmentTask_;
         std::shared_ptr<ikcl::AngularVelocity> angularVelocityTask_;
         std::shared_ptr<ikcl::LinearVelocity> linearVelocityTask_;
         std::chrono::system_clock::time_point tStart_, tNow_;

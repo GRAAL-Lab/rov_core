@@ -198,54 +198,15 @@ void DynamicRovController::Run()
         } else if (dcl_conf->ctrlMode == ControlMode::ClassicPIDControl) {
             Eigen::Vector6d dirV;
             dirV.setZero();
-            /*
-            if(vehicleStatus.vehicle_state == rov::states::ID::hold){
-                Eigen::Vector6d tau; tau.setZero();
-                MoveByForce(tau,thruster_voltage_);
-                motion_direction = rov::inputs::ID::hold;
-            }
-            */
-            /*
-            else if (vehicleStatus.vehicle_state == rov::states::ID::velocity){
 
-                SetDirectionVector(dirV);
-                //Dynamic Pids
-
-                // different tau for normal configuration
-                // tau for heavy configuration
-
-                Eigen::Vector3d bodyF_dirV;
-                bodyF_dirV = bodyF_R_worldF * dirV.head(3);
-
-                tau << pidSurgeCP_.Compute(referenceVelocities.desired_surge, relSurgeFbk),
+            tau << pidSurgeCP_.Compute(referenceVelocities.desired_surge, relSurgeFbk),
                     pidSwayCP_.Compute(referenceVelocities.desired_sway, relSwayFbk),
                     pidHeaveCP_.Compute(referenceVelocities.desired_heave, relHeaveFbk),
                     pidRollRateCP_.Compute(referenceVelocities.desired_roll_rate, rollRateFbk),
                     pidPitchRateCP_.Compute(referenceVelocities.desired_pitch_rate, pitchRateFbk),
                     pidYawRateCP_.Compute(referenceVelocities.desired_yaw_rate, yawRateFbk);
 
-
-
-                thruster_voltage_ = rovModel_.ThusterAllocation(tau);
-            }
-            else if (vehicleStatus.vehicle_state == rov::states::ID::latlongalt){
-                tau << pidSurgeCP_.Compute(referenceVelocities.desired_surge, relSurgeFbk),
-                    pidSwayCP_.Compute(referenceVelocities.desired_sway, relSwayFbk),
-                    pidHeaveCP_.Compute(referenceVelocities.desired_heave, relHeaveFbk),
-                    pidRollRateCP_.Compute(referenceVelocities.desired_roll_rate, rollRateFbk),
-                    pidPitchRateCP_.Compute(referenceVelocities.desired_pitch_rate, pitchRateFbk),
-                    pidYawRateCP_.Compute(referenceVelocities.desired_yaw_rate, yawRateFbk);
-                thruster_voltage_ = rovModel_.ThusterAllocation(tau);
-            } */
-            //else{
-                tau << pidSurgeCP_.Compute(referenceVelocities.desired_surge, relSurgeFbk),
-                    pidSwayCP_.Compute(referenceVelocities.desired_sway, relSwayFbk),
-                    pidHeaveCP_.Compute(referenceVelocities.desired_heave, relHeaveFbk),
-                    pidRollRateCP_.Compute(referenceVelocities.desired_roll_rate, rollRateFbk),
-                    pidPitchRateCP_.Compute(referenceVelocities.desired_pitch_rate, pitchRateFbk),
-                    pidYawRateCP_.Compute(referenceVelocities.desired_yaw_rate, yawRateFbk);
-
-                thruster_voltage_ = rovModel_.ThusterAllocation(tau);
+            thruster_voltage_ = rovModel_.ThusterAllocation(tau);
             //}
 
             Eigen::Vector6d feedbackVel = Eigen::Vector6d::Zero();
@@ -264,18 +225,18 @@ void DynamicRovController::Run()
             long now_nanosecs = (std::chrono::duration_cast<std::chrono::nanoseconds>(t_now_.time_since_epoch())).count();
             classicPidControlMsg.stamp.sec = static_cast<unsigned int>(now_nanosecs / static_cast<int>(1E9));
             classicPidControlMsg.stamp.nanosec = static_cast<unsigned int>(now_nanosecs % static_cast<int>(1E9));
-            classicPidControlMsg.desired_surge = dirV[0]*referenceVelocities.desired_surge;
-            classicPidControlMsg.desired_sway = dirV[1]*referenceVelocities.desired_sway;
-            classicPidControlMsg.desired_heave = dirV[2]*referenceVelocities.desired_heave;
+            classicPidControlMsg.desired_surge = referenceVelocities.desired_surge;
+            classicPidControlMsg.desired_sway = referenceVelocities.desired_sway;
+            classicPidControlMsg.desired_heave = referenceVelocities.desired_heave;
             classicPidControlMsg.feedback_surge = absSurgeFbk;
             classicPidControlMsg.feedback_sway = absSwayFbk;
             classicPidControlMsg.feedback_heave = absHeaveFbk;
             classicPidControlMsg.out_pid_surge = pidSurgeCP_.GetOutput();
             classicPidControlMsg.out_pid_sway = pidSwayCP_.GetOutput();
             classicPidControlMsg.out_pid_heave = pidHeaveCP_.GetOutput();
-            classicPidControlMsg.desired_roll_rate = dirV[3]*referenceVelocities.desired_roll_rate;
-            classicPidControlMsg.desired_pitch_rate = dirV[4]*referenceVelocities.desired_yaw_rate;
-            classicPidControlMsg.desired_yaw_rate = dirV[5]*referenceVelocities.desired_yaw_rate;
+            classicPidControlMsg.desired_roll_rate = referenceVelocities.desired_roll_rate;
+            classicPidControlMsg.desired_pitch_rate = referenceVelocities.desired_yaw_rate;
+            classicPidControlMsg.desired_yaw_rate = referenceVelocities.desired_yaw_rate;
             classicPidControlMsg.feedback_roll_rate = rollRateFbk;
             classicPidControlMsg.feedback_pitch_rate = pitchRateFbk;
             classicPidControlMsg.feedback_yaw_rate = yawRateFbk;
@@ -299,47 +260,6 @@ void DynamicRovController::Run()
 
         } /*else if (dcl_conf->ctrlMode == ControlMode::ComputedTorque) {
 
-
-            tau = { pidSurgeCT.Compute(referenceVelocities.desired_surge, absSurgeFbk), pidYawRateCT.Compute(referenceVelocities.desired_yaw_rate, yawRateFbk) };
-
-            // using relative surge velocity for the feedforward term
-            Eigen::Vector6d feedbackVel = Eigen::Vector6d::Zero();
-            feedbackVel(0) = relSurgeFbk;
-            feedbackVel(5) = yawRateFbk;
-
-            Eigen::Vector3d tauDrag = ulisseModel.ComputeCoriolisAndDragForces(feedbackVel);
-            
-            //std::cerr << "tau PID:  F = " << tau[0] << " | N = " << tau[1] << std::endl;
-            //std::cerr << "tau CT :  F = " << tauDrag[0] << " | N = " << tauDrag[2] << std::endl;
-
-            tau += Eigen::Vector2d(tauDrag[0], tauDrag[2]);
-            double outLeft, outRight;
-
-            Eigen::Vector2d forces = ulisseModel.ThusterAllocation(tau);
-            ulisseModel.InverseMotorsEquations(feedbackVel, forces, outLeft, outRight);
-            ulisseModel.ThrustersSaturation(outLeft, outRight, -dcl_conf->thrusterPercLimit, dcl_conf->thrusterPercLimit, thrustersReference.left_percentage, thrustersReference.right_percentage);
-
-
-            //Fill the classic dynamic pid contol msg
-            auto t_now_ = std::chrono::system_clock::now();
-            long now_nanosecs = (std::chrono::duration_cast<std::chrono::nanoseconds>(t_now_.time_since_epoch())).count();
-            computedTorqueMsg.stamp.sec = static_cast<unsigned int>(now_nanosecs / static_cast<int>(1E9));
-            computedTorqueMsg.stamp.nanosec = static_cast<unsigned int>(now_nanosecs % static_cast<int>(1E9));
-            computedTorqueMsg.desired_surge = referenceVelocities.desired_surge;
-            computedTorqueMsg.feedback_surge = absSurgeFbk;
-            computedTorqueMsg.out_pid_surge = pidSurgeCP.GetOutput();
-            computedTorqueMsg.desired_yaw_rate = referenceVelocities.desired_yaw_rate;
-            computedTorqueMsg.feedback_yaw_rate = yawRateFbk;
-            computedTorqueMsg.out_pid_yaw_rate = pidYawRateCP.GetOutput();
-            computedTorqueMsg.forces = { forces[0], forces[1] };
-            computedTorqueMsg.tau = { tau[0], tau[1] };
-            computedTorqueMsg.motor_percentage.left_percentage = outLeft;
-            computedTorqueMsg.motor_percentage.right_percentage = outRight;
-            computedTorqueControlPub_->publish(computedTorqueMsg);
-
-            //fill the feedback for the nav filter
-            simulatedVelocitySensor.water_relative_surge = referenceVelocities.desired_surge;
-            simulatedVelocitySensorPub_->publish(simulatedVelocitySensor);
         }*/
         else{}
 

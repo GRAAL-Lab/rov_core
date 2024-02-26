@@ -63,7 +63,7 @@ class ROVController : public rclcpp::Node {
     std::shared_ptr<ikcl::SafetyBoundaries> rovSafetyBoundaries_;
     std::shared_ptr<ikcl::AbsoluteAxisAlignment> rovAbsoluteAxisAlignment_;
     std::shared_ptr<ikcl::AbsoluteAxisAlignment> rovAbsoluteAxisAlignmentSafety_;
-    std::shared_ptr<ikcl::AbsoluteAxisAlignment> rovAbsoluteAxisAlignmentHold_;
+    //std::shared_ptr<ikcl::AbsoluteAxisAlignment> rovAbsoluteAxisAlignmentHold_;
     std::shared_ptr<ikcl::CartesianDistance> rovCartesianDistancePathFollowing_;
 
     double timestamp_;

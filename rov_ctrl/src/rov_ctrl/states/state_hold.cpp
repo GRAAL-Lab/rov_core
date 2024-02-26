@@ -23,7 +23,7 @@ namespace states {
         //safetyBoundariesTask_ = std::dynamic_pointer_cast<ikcl::SafetyBoundaries>(tasksMap.find(rov::task::rovSafetyBoundaries)->second.task);
         //absoluteAxisAlignmentSafetyTask_ = std::dynamic_pointer_cast<ikcl::AbsoluteAxisAlignment>(tasksMap.find(rov::task::rovAbsoluteAxisAlignmentSafety)->second.task);
         linearVelocityTask_ = std::dynamic_pointer_cast<ikcl::LinearVelocity>(tasksMap.find(rov::task::rovLinearVelocityHold)->second.task);
-        absoluteAxisAlignmentTask_ = std::dynamic_pointer_cast<ikcl::AbsoluteAxisAlignment>(tasksMap.find(rov::task::rovAbsoluteAxisAlignmentHold)->second.task);
+        absoluteAxisAlignmentTask_ = std::dynamic_pointer_cast<ikcl::AbsoluteAxisAlignment>(tasksMap.find(rov::task::rovAbsoluteAxisAlignmentSafety)->second.task);
         cartesianDistanceTask_ = std::dynamic_pointer_cast<ikcl::CartesianDistance>(tasksMap.find(rov::task::rovCartesianDistanceHold)->second.task);
 
         // Set action
@@ -90,8 +90,9 @@ namespace states {
             absoluteAxisAlignmentTask_->SetRobotAxis2Align(Eigen::Vector3d(0, 0, 1), rov::robotModelID::blueROV);
 
             // Avoid that the roboto try to align with very small intensity of water current.
-            double absoluteAxisAlignmentGain = rml::IncreasingBellShapedFunction(minWaterCurrent_, maxWaterCurrent_, 0, 1, (ctrlData->inertialF_waterCurrent).norm());
-            //absoluteAxisAlignmentTask_->ExternalActivationFunction() = absoluteAxisAlignmentGain * Eigen::MatrixXd::Identity(absoluteAxisAlignmentTask_->TaskSpace(), absoluteAxisAlignmentTask_->TaskSpace());
+            //double absoluteAxisAlignmentGain = rml::IncreasingBellShapedFunction(minWaterCurrent_, maxWaterCurrent_, 0, 1, (ctrlData->inertialF_waterCurrent).norm());
+            double absoluteAxisAlignmentGain =1;
+            absoluteAxisAlignmentTask_->ExternalActivationFunction() = absoluteAxisAlignmentGain * Eigen::MatrixXd::Identity(absoluteAxisAlignmentTask_->TaskSpace(), absoluteAxisAlignmentTask_->TaskSpace());
             absoluteAxisAlignmentTask_->Update();
             cartesianDistanceTask_->ExternalActivationFunction() = 0.0 * Eigen::MatrixXd::Identity(cartesianDistanceTask_->TaskSpace(), cartesianDistanceTask_->TaskSpace());
 
@@ -105,7 +106,7 @@ namespace states {
                 surgeReference = -rml::IncreasingBellShapedFunction(minAcceptanceRadius, maxAcceptanceRadius, 0.0, maxSurgeComeback2Hold_, -goalDistance_x);
 
             if(goalDistance_y > 0.0)
-                swayReference = rml::IncreasingBellShapedFunction(minAcceptanceRadius, maxAcceptanceRadius, 0.0, maxSurgeComeback2Hold_, goalDistance_y);
+                swayReference = rml::IncreasingBellSha0pedFunction(minAcceptanceRadius, maxAcceptanceRadius, 0.0, maxSurgeComeback2Hold_, goalDistance_y);
             else
                 surgeReference = -rml::IncreasingBellShapedFunction(minAcceptanceRadius, maxAcceptanceRadius, 0.0, maxSurgeComeback2Hold_, -goalDistance_y);
 

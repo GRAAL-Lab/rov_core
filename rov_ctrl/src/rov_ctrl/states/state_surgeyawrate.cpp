@@ -48,6 +48,7 @@ namespace states {
         /*safetyBoundariesTask_ = std::dynamic_pointer_cast<ikcl::SafetyBoundaries>(tasksMap.find(ulisse::task::asvSafetyBoundaries)->second.task);
         absoluteAxisAlignmentSafetyTask_ = std::dynamic_pointer_cast<ikcl::AbsoluteAxisAlignment>(tasksMap.find(ulisse::task::asvAbsoluteAxisAlignmentSafety)->second.task);
         */
+        absoluteAxisAlignmentTask_ = std::dynamic_pointer_cast<ikcl::AbsoluteAxisAlignment>(tasksMap.find(rov::task::rovAbsoluteAxisAlignmentSafety)->second.task);
         linearVelocityTask_ = std::dynamic_pointer_cast<ikcl::LinearVelocity>(tasksMap.find(rov::task::rovLinearVelocity)->second.task);
         angularVelocityTask_ = std::dynamic_pointer_cast<ikcl::AngularVelocity>(tasksMap.find(rov::task::rovAngularVelocity)->second.task);
 
@@ -102,6 +103,11 @@ namespace states {
         //safetyBoundariesTask_->TaskParameter().gain = taskGainSafety * safetyBoundariesTask_->TaskParameter().conf_gain;
 
         // Set a velocity to point to the circle in case of the catamaran  slips away.
+        absoluteAxisAlignmentTask_->SetDirectionAlignment(Eigen::Vector3d(0, 0, 1),rml::FrameID::WorldFrame);
+        absoluteAxisAlignmentTask_->SetRobotAxis2Align(Eigen::Vector3d(0, 0, 1), rov::robotModelID::blueROV);
+        absoluteAxisAlignmentTask_->ExternalActivationFunction() = 1.0 * Eigen::MatrixXd::Identity(absoluteAxisAlignmentTask_->TaskSpace(), absoluteAxisAlignmentTask_->TaskSpace());
+        absoluteAxisAlignmentTask_->Update();
+
         linearVelocityTask_->SetReferenceRate(Eigen::Vector3d(goalSurge, goalSway, goalHeave), robotModel->BodyFrameID());
         linearVelocityTask_->Update();
         // Slow-down and turn: compute the gain to modify the exernal activation function of linear velocity task.

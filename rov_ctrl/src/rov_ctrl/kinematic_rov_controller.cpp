@@ -109,10 +109,10 @@ ROVController::ROVController(std::string conf_filename)
     //tasksMap_.insert(std::make_pair(rov::task::rovAbsoluteAxisAlignmentSafety, taskInfo_));
 
     // ROV absolute axis alignment task hold
-    rovAbsoluteAxisAlignmentHold_ = std::make_shared<ikcl::AbsoluteAxisAlignment>(ikcl::AbsoluteAxisAlignment(rov::task::rovAbsoluteAxisAlignmentHold, robotModel_, rov::robotModelID::blueROV));
-    taskInfo_.task = rovAbsoluteAxisAlignmentHold_;
-    taskInfo_.taskPub = this->create_publisher<rov_msgs::msg::TaskStatus>(rov_msgs::topicnames::task_absolute_axis_alignment_hold, 1);
-    tasksMap_.insert(std::make_pair(rov::task::rovAbsoluteAxisAlignmentHold, taskInfo_));
+    rovAbsoluteAxisAlignmentSafety_ = std::make_shared<ikcl::AbsoluteAxisAlignment>(ikcl::AbsoluteAxisAlignment(rov::task::rovAbsoluteAxisAlignmentSafety, robotModel_, rov::robotModelID::blueROV));
+    taskInfo_.task = rovAbsoluteAxisAlignmentSafety_;
+    taskInfo_.taskPub = this->create_publisher<rov_msgs::msg::TaskStatus>(rov_msgs::topicnames::task_absolute_axis_alignment_safety, 1);
+    tasksMap_.insert(std::make_pair(rov::task::rovAbsoluteAxisAlignmentSafety, taskInfo_));
 
     // ROV CONTROL VELOCITY LINEAR HOLD
     rovLinearVelocityHold_ = std::make_shared<ikcl::LinearVelocity>(ikcl::LinearVelocity(rov::task::rovLinearVelocityHold, robotModel_, rov::robotModelID::blueROV));
@@ -681,10 +681,14 @@ void ROVController::PublishTF(){
         t_stamp_goals.transform.translation.z = goal_pos.z();
         tf2::Quaternion q;
         q.setRPY(0.0, 0.0, stateLatLong_->goalHeading);
-        t_stamp_goals.transform.rotation.x = q.x();
+        /*t_stamp_goals.transform.rotation.x = q.x();
         t_stamp_goals.transform.rotation.y = q.y();
         t_stamp_goals.transform.rotation.z = q.z();
-        t_stamp_goals.transform.rotation.w = q.w();
+        t_stamp_goals.transform.rotation.w = q.w();*/
+        t_stamp_goals.transform.rotation.x = 0.0;
+        t_stamp_goals.transform.rotation.y = 0.0;
+        t_stamp_goals.transform.rotation.z = 0.0;
+        t_stamp_goals.transform.rotation.w = 1.0;
         tf_broadcaster_->sendTransform(t_stamp_goals);
 
     }

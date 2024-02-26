@@ -11,6 +11,7 @@ namespace states {
     class StateLatLong : public GenericState {
 
     protected:
+        std::shared_ptr<ikcl::AbsoluteAxisAlignment> absoluteAxisAlignmentTask_;
         std::shared_ptr<ikcl::AlignToTarget> alignToTargetTask_;
         std::shared_ptr<ikcl::CartesianDistance> cartesianDistanceTask_;
 
