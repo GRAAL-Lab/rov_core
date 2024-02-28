@@ -16,6 +16,8 @@
 #include "underwater_vehicle_model/underwater_vehicle.hpp"
 
 #include "rov_msgs/msg/simulated_system.hpp"
+#include "ulisse_msgs/msg/simulated_system.hpp"
+
 #include "rov_msgs/msg/micro_loop_count.hpp"
 #include "rov_msgs/msg/forces.hpp"
 #include "rov_msgs/msg/thrusters_reference.hpp"
@@ -32,6 +34,8 @@
 //#include "rml/RML.h"
 
 #include "rov_msgs/srv/user_input.hpp"
+
+#include "rov_msgs/topicnames.hpp"
 
 namespace rov {
 
@@ -78,6 +82,7 @@ class VehicleSimulator : public rclcpp::Node {
 
     rov_msgs::msg::MicroLoopCount microLoopCountMsg_;
     rov_msgs::msg::SimulatedSystem groundTruthMsg_;
+    rov_msgs::msg::SimulatedSystem groundTruth_UlisseMsg_;
     rov_msgs::msg::Forces forcesMsg_;
     rov_msgs::msg::CableData cableMsg_;
 
@@ -122,6 +127,7 @@ class VehicleSimulator : public rclcpp::Node {
     rclcpp::Publisher<rov_msgs::msg::CableData>::SharedPtr cableDataPub_;
 
     rclcpp::Subscription<rov_msgs::msg::ThrustersReference>::SharedPtr thrustersSub_;
+    rclcpp::Subscription<ulisse_msgs::msg::SimulatedSystem>::SharedPtr simulatedSystemAsvSub_;
 
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr posePub_;
 
@@ -175,6 +181,7 @@ public:
     double GetCurrentTimeStamp() const;
 
     void ThrustersReferenceCB(const rov_msgs::msg::ThrustersReference::SharedPtr msg);
+    void ASVsimulatedSysCB(const ulisse_msgs::msg::SimulatedSystem::SharedPtr msg);
 };
 }
 

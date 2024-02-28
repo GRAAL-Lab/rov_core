@@ -4,7 +4,6 @@
 #include <libconfig.h++>
 
 //#include "GeographicLib/UTMUPS.hpp"
-#include "rov_msgs/topicnames.hpp"
 
 #include "rov_sim/rov_simulator.hpp"
 #include "rov_sim/simulator_defines.hpp"
@@ -85,6 +84,8 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
 
     thrustersSub_ = this->create_subscription<rov_msgs::msg::ThrustersReference>(rov_msgs::topicnames::llc_thrusters_reference_perc, 1,
         std::bind(&VehicleSimulator::ThrustersReferenceCB, this, _1));
+    simulatedSystemAsvSub_ = this->create_subscription<ulisse_msgs::msg::SimulatedSystem>("/ulisse/simulated_system", 1,
+                                                                                          std::bind(&VehicleSimulator::ASVsimulatedSysCB, this, _1));
 
     worldF_waterVelocity_(0) = 0.0;
     worldF_waterVelocity_(1) = 0.0;
@@ -153,7 +154,7 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
 
     Eigen::Vector3d worldF_cable_starting;
     ctb::LatLong cable_starting_, cable_ending_;
-    worldF_cable_starting = {-1.0, 0, 0};
+    worldF_cable_starting = {0, 0, 0};
     ctb::LocalUTM2LatLong(worldF_cable_starting, centroidLocation_, cableStartPos_, cableStart_altitude_);
 
     //std::cout << "Please Enter a command for ROV motion: " << std::endl;
@@ -407,6 +408,9 @@ void VehicleSimulator::SimulateActuation()
     ctb::LocalUTM2LatLong(worldF_cable_ending, centroidLocation_, cableEndPos_, cableEnd_altitude_);
     cableEndPosXY_ = worldF_cable_ending;
 
+    cableStartPos_.latitude = groundTruth_UlisseMsg_.inertialframe_linear_position.latlong.latitude;
+    cableStartPos_.longitude = groundTruth_UlisseMsg_.inertialframe_linear_position.latlong.longitude;
+    cableStart_altitude_ = 0.0;
     //float v;
     //rovModel_.RunCableWinch(1.0, v);
     //rovModel_.UpdateCableLength(v, Ts_);
@@ -626,13 +630,14 @@ void VehicleSimulator::SimulateSensors()
     q2.setRPY(bodyF_orientation_.Roll(),bodyF_orientation_.Pitch(),bodyF_orientation_.Yaw());
     //tf2::quaternionEigenToTF(eq1, q1);
     //transform.setRotation(q);
+    /*
     t_stamp_ROV.transform.rotation.x = q2.x();
     t_stamp_ROV.transform.rotation.y = q2.y();
     t_stamp_ROV.transform.rotation.z = q2.z();
     t_stamp_ROV.transform.rotation.w = q2.w();
 
     tf_broadcaster_ROV->sendTransform(t_stamp_ROV);
-
+*/
     t_stamp_ROV.header.stamp = this->get_clock()->now();
     t_stamp_ROV.header.frame_id = "world";
     t_stamp_ROV.child_frame_id = "ROV";
@@ -657,24 +662,29 @@ void VehicleSimulator::SimulateSensors()
 
     Eigen::Vector3d cableS_pos;
     ctb::LatLong2LocalUTM(cableStartPos_, cableStart_altitude_, centroidLocation_, cableS_pos);
+    tf2::Quaternion q_ulisse;
+    q_ulisse.setRPY(groundTruth_UlisseMsg_.bodyframe_angular_position.roll,
+                    groundTruth_UlisseMsg_.bodyframe_angular_position.pitch,
+                    groundTruth_UlisseMsg_.bodyframe_angular_position.yaw);
+
     Eigen::Vector3d cableE_pos;
     ctb::LatLong2LocalUTM(cableEndPos_, cableEnd_altitude_, centroidLocation_, cableE_pos);
 
     t_stamp_ROV.header.stamp = this->get_clock()->now();
     t_stamp_ROV.header.frame_id = "world";
-    t_stamp_ROV.child_frame_id = "cable_p1";
+    t_stamp_ROV.child_frame_id = "cableS";
     t_stamp_ROV.transform.translation.x = cableS_pos.x();
     t_stamp_ROV.transform.translation.y = cableS_pos.y();
     t_stamp_ROV.transform.translation.z = cableS_pos.z();
-    t_stamp_ROV.transform.rotation.x = 1.0;
-    t_stamp_ROV.transform.rotation.y = 0.0;
-    t_stamp_ROV.transform.rotation.z = 0.0;
-    t_stamp_ROV.transform.rotation.w = 0.0;
+    t_stamp_ROV.transform.rotation.x = q_ulisse.x();
+    t_stamp_ROV.transform.rotation.y = q_ulisse.y();
+    t_stamp_ROV.transform.rotation.z = q_ulisse.z();
+    t_stamp_ROV.transform.rotation.w = q_ulisse.w();
     tf_broadcaster_ROV->sendTransform(t_stamp_ROV);
 
     t_stamp_ROV.header.stamp = this->get_clock()->now();
     t_stamp_ROV.header.frame_id = "world";
-    t_stamp_ROV.child_frame_id = "cable";
+    t_stamp_ROV.child_frame_id = "cableE";
     t_stamp_ROV.transform.translation.x = cableEndPosXY_.x();
     t_stamp_ROV.transform.translation.y = cableEndPosXY_.y();
     t_stamp_ROV.transform.translation.z = cableEndPosXY_.z();
@@ -758,7 +768,6 @@ double VehicleSimulator::GetCurrentTimeStamp() const
 
 void VehicleSimulator::ThrustersReferenceCB(const rov_msgs::msg::ThrustersReference::SharedPtr msg)
 {
-
     volt_cmd[0] = msg->first_percentage;
     volt_cmd[1] = msg->second_percentage;
     volt_cmd[2] = msg->third_percentage;
@@ -773,5 +782,22 @@ void VehicleSimulator::ThrustersReferenceCB(const rov_msgs::msg::ThrustersRefere
 
     //motorTimeout_.Start();
 }
+
+void VehicleSimulator::ASVsimulatedSysCB(const ulisse_msgs::msg::SimulatedSystem::SharedPtr msg){
+    groundTruth_UlisseMsg_.inertialframe_linear_position.latlong.latitude = msg->inertialframe_linear_position.latlong.latitude;
+    groundTruth_UlisseMsg_.inertialframe_linear_position.latlong.longitude = msg->inertialframe_linear_position.latlong.longitude;
+    groundTruth_UlisseMsg_.inertialframe_linear_position.altitude = 0.0;
+    groundTruth_UlisseMsg_.bodyframe_angular_position.roll = msg->bodyframe_angular_position.roll;
+    groundTruth_UlisseMsg_.bodyframe_angular_position.pitch = msg->bodyframe_angular_position.pitch;
+    groundTruth_UlisseMsg_.bodyframe_angular_position.yaw = msg->bodyframe_angular_position.yaw;
+    groundTruth_UlisseMsg_.bodyframe_linear_velocity[0] = msg->bodyframe_linear_velocity[0];
+    groundTruth_UlisseMsg_.bodyframe_linear_velocity[1] = msg->bodyframe_linear_velocity[1];
+    groundTruth_UlisseMsg_.bodyframe_linear_velocity[2] = 0.0;
+    groundTruth_UlisseMsg_.bodyframe_angular_velocity[0] = msg->bodyframe_angular_velocity[0];
+    groundTruth_UlisseMsg_.bodyframe_angular_velocity[1] = msg->bodyframe_angular_velocity[1];
+    groundTruth_UlisseMsg_.bodyframe_angular_velocity[2] = msg->bodyframe_angular_velocity[2];
+}
+
+
 
 }

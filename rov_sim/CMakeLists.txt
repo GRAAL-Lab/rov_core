@@ -18,6 +18,7 @@ find_package(underwater_vehicle_model REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(ctrl_toolbox REQUIRED)
 find_package(rov_msgs REQUIRED)
+find_package(ulisse_msgs REQUIRED)
 find_package(rov_ctrl REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
@@ -45,6 +46,7 @@ ament_target_dependencies(
     VehicleSimulatorClass
     rclcpp
     rov_msgs
+    ulisse_msgs
     rov_ctrl
     ament_index_cpp
     geometry_msgs
@@ -60,6 +62,7 @@ ament_target_dependencies(
     simulator_node
     rclcpp std_msgs
     rov_msgs
+    ulisse_msgs
     rov_ctrl
     underwater_vehicle_model
     )
