@@ -12,7 +12,6 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(underwater_vehicle_model REQUIRED)
 find_package(ament_index_cpp REQUIRED)
@@ -20,6 +19,7 @@ find_package(ctrl_toolbox REQUIRED)
 find_package(rov_msgs REQUIRED)
 find_package(ulisse_msgs REQUIRED)
 find_package(rov_ctrl REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 
@@ -50,7 +50,6 @@ ament_target_dependencies(
     rov_ctrl
     ament_index_cpp
     geometry_msgs
-    ament_index_cpp
     tf2
     tf2_ros
     ) #add rov message
