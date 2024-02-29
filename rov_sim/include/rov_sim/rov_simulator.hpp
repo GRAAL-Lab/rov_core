@@ -61,10 +61,10 @@ class VehicleSimulator : public rclcpp::Node {
     ctb::LatLong cableStartPos_, cableEndPos_;
     double cableLength_;
     double cableStart_altitude_, cableEnd_altitude_;
-    Eigen::Vector3d bodyF_cable_ending_;
+    Eigen::Vector3d bodyF_cable_ending_, bodyF_cable_starting_;
 
-    Eigen::Vector3d cableStartPosXY_;
-    Eigen::Vector3d cableEndPosXY_;
+    Eigen::Vector3d cableStart_cartesian_;
+    Eigen::Vector3d cableEnd_cartesian_;
 
 
     //Eigen::Matrix3d P_;
@@ -138,7 +138,8 @@ class VehicleSimulator : public rclcpp::Node {
 
     bool realTime_;
 
-    Eigen::RotationMatrix worldF_R_bodyF_;
+    Eigen::RotationMatrix worldF_ROV_bodyF_;
+    Eigen::RotationMatrix worldF_ASV_bodyF_;
 
     std::shared_ptr<SimulatorConfiguration> config_;
     UnderwaterVehicle rovModel_;

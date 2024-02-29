@@ -138,24 +138,25 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
         0, cos(bodyF_orientation_.Roll()), -sin(bodyF_orientation_.Roll()),
         0, sin(bodyF_orientation_.Roll()), cos(bodyF_orientation_.Roll());
 
-    worldF_R_bodyF_ = Rz * Ry * Rx;
-    //Eigen::RotationMatrix bodyF_R_worldF = worldF_R_bodyF_.transpose();
+    worldF_ROV_bodyF_ = Rz * Ry * Rx;
+    //Eigen::RotationMatrix bodyF_R_worldF = worldF_ROV_bodyF_.transpose();
 
-    rovModel_.InitializeMatrices(vel_initial, worldF_R_bodyF_);
+    rovModel_.InitializeMatrices(vel_initial, worldF_ROV_bodyF_);
     rovModel_.InitializeCableWinch();
 
     bodyF_cable_ending_ = { -rovModel_.params.L / 2, 0.0, 0.0};
+    bodyF_cable_starting_ = {1.0, 0.0, 0.0};
     //bodyF_cable_ending_ = { 1.0, 0.0, 0.0};
     Eigen::Vector3d worldF_cable_ending;
-    worldF_cable_ending =  worldF_R_bodyF_ * bodyF_cable_ending_;
+    worldF_cable_ending =  worldF_ROV_bodyF_ * bodyF_cable_ending_;
     worldF_cable_ending =  worldF_cable_ending + pos_initial;
     ctb::LocalUTM2LatLong(worldF_cable_ending, centroidLocation_, cableEndPos_, cableEnd_altitude_);
-    rovModel_.SetCableLength(8.0);
+    rovModel_.SetCableLength(5.0);
 
-    Eigen::Vector3d worldF_cable_starting;
-    ctb::LatLong cable_starting_, cable_ending_;
-    worldF_cable_starting = {0, 0, 0};
-    ctb::LocalUTM2LatLong(worldF_cable_starting, centroidLocation_, cableStartPos_, cableStart_altitude_);
+    //Eigen::Vector3d worldF_cable_starting;
+    //ctb::LatLong cable_starting_, cable_ending_;
+    //worldF_cable_starting = {0, 0, 0};
+    //ctb::LocalUTM2LatLong(worldF_cable_starting, centroidLocation_, cableStartPos_, cableStart_altitude_);
 
     //std::cout << "Please Enter a command for ROV motion: " << std::endl;
     std::cout << "Motion type : hold" << std::endl;
@@ -300,12 +301,12 @@ void VehicleSimulator::SimulateActuation()
     // Computing rov acceleration
     Eigen::Vector6d bodyF_cableForce;
     float cable_length = rovModel_.GetCableReleasedLength();
-    //Eigen::RotationMatrix bodyF_R_worldF = worldF_R_bodyF_.transpose();
+    //Eigen::RotationMatrix bodyF_R_worldF = worldF_ROV_bodyF_.transpose();
 
-    bodyF_cableForce = rovModel_.ComputeFcable_bodyF(cableS_pos_worldF, cableE_pos_worldF, cable_length, worldF_R_bodyF_);
+    bodyF_cableForce = rovModel_.ComputeFcable_bodyF(cableS_pos_worldF, cableE_pos_worldF, cable_length, worldF_ROV_bodyF_);
 
     //std::cout << "volt_cmd = "<< volt_cmd << std::endl;
-    rovModel_.DirectDynamics(volt_cmd, bodyF_cableForce, worldF_R_bodyF_, bodyF_relativeVelocity_, bodyF_relativeAcceleration_);
+    rovModel_.DirectDynamics(volt_cmd, bodyF_cableForce, worldF_ROV_bodyF_, bodyF_relativeVelocity_, bodyF_relativeAcceleration_);
 
     Eigen::RotationMatrix Rz, Ry, Rx;
     Rz << cos(bodyF_orientation_.Yaw()), -sin(bodyF_orientation_.Yaw()), 0,
@@ -320,12 +321,27 @@ void VehicleSimulator::SimulateActuation()
         0, cos(bodyF_orientation_.Roll()), -sin(bodyF_orientation_.Roll()),
         0, sin(bodyF_orientation_.Roll()), cos(bodyF_orientation_.Roll());
 
-    worldF_R_bodyF_ = Rz * Ry * Rx;
+    worldF_ROV_bodyF_ = Rz * Ry * Rx;
+
+    Eigen::RotationMatrix asvRz, asvRy, asvRx;
+    asvRz << cos(groundTruth_UlisseMsg_.bodyframe_angular_position.yaw), -sin(groundTruth_UlisseMsg_.bodyframe_angular_position.yaw), 0,
+        sin(groundTruth_UlisseMsg_.bodyframe_angular_position.yaw), cos(groundTruth_UlisseMsg_.bodyframe_angular_position.yaw), 0,
+        0, 0, 1;
+
+    asvRy << cos(groundTruth_UlisseMsg_.bodyframe_angular_position.pitch), 0, sin(groundTruth_UlisseMsg_.bodyframe_angular_position.pitch),
+        0, 1, 0,
+        -sin(groundTruth_UlisseMsg_.bodyframe_angular_position.pitch), 0, cos(groundTruth_UlisseMsg_.bodyframe_angular_position.pitch);
+
+    asvRx << 1, 0, 0,
+        0, cos(groundTruth_UlisseMsg_.bodyframe_angular_position.roll), -sin(groundTruth_UlisseMsg_.bodyframe_angular_position.roll),
+        0, sin(groundTruth_UlisseMsg_.bodyframe_angular_position.roll), cos(groundTruth_UlisseMsg_.bodyframe_angular_position.roll);
+
+    worldF_ASV_bodyF_ = asvRz * asvRy * asvRx;
 
     // Compute the projection of the velocity on the plane (non "vola")
     //Eigen::Vector3d worldF_wFk = { 0.0, 0.0, 1.0 };
 
-    //bodyF_wFk_ = worldF_R_bodyF_.transpose() * worldF_wFk;
+    //bodyF_wFk_ = worldF_ROV_bodyF_.transpose() * worldF_wFk;
 
     //P_ = Eigen::Matrix3d::Identity() - bodyF_wFk_ * bodyF_wFk_.transpose();
 
@@ -402,14 +418,22 @@ void VehicleSimulator::SimulateActuation()
     bodyF_orientation_.Yaw(std::fmod((previous_bodyF_orientation_.Yaw() + rpyEulerRates(2) * Ts_) + 2 * M_PI, 2 * M_PI));
 
     // update cable ending pos
-    Eigen::Vector3d worldF_cable_ending;
-    worldF_cable_ending =  worldF_R_bodyF_ * bodyF_cable_ending_;
+    Eigen::Vector3d worldF_cable_ending, worldF_cable_starting;
+    worldF_cable_ending =  worldF_ROV_bodyF_ * bodyF_cable_ending_;
     worldF_cable_ending =  worldF_cable_ending + ROVpose_;
     ctb::LocalUTM2LatLong(worldF_cable_ending, centroidLocation_, cableEndPos_, cableEnd_altitude_);
-    cableEndPosXY_ = worldF_cable_ending;
+    cableEnd_cartesian_ = worldF_cable_ending;
 
-    cableStartPos_.latitude = groundTruth_UlisseMsg_.inertialframe_linear_position.latlong.latitude;
-    cableStartPos_.longitude = groundTruth_UlisseMsg_.inertialframe_linear_position.latlong.longitude;
+    worldF_cable_starting = worldF_ASV_bodyF_ * bodyF_cable_starting_;
+    Eigen::Vector3d ASVpos;
+    ctb::LatLong ASV_latlong;
+    ASV_latlong.latitude = groundTruth_UlisseMsg_.inertialframe_linear_position.latlong.latitude;
+    ASV_latlong.longitude = groundTruth_UlisseMsg_.inertialframe_linear_position.latlong.longitude;
+    ctb::LatLong2LocalUTM(ASV_latlong, groundTruth_UlisseMsg_.inertialframe_linear_position.altitude, centroidLocation_, ASVpos);
+    cableStart_cartesian_ = worldF_cable_starting + ASVpos;
+    ctb::LocalUTM2LatLong(cableStart_cartesian_, centroidLocation_, cableStartPos_, cableStart_altitude_);
+    //cableStartPos_.latitude = groundTruth_UlisseMsg_.inertialframe_linear_position.latlong.latitude;
+    //cableStartPos_.longitude = groundTruth_UlisseMsg_.inertialframe_linear_position.latlong.longitude;
     cableStart_altitude_ = 0.0;
     //float v;
     //rovModel_.RunCableWinch(1.0, v);
@@ -443,7 +467,7 @@ void VehicleSimulator::SimulateSensors()
     ctb::LatLong2LocalNED(vehiclePos_, altitude_, centroidLocation_, worldF_com);
 
     //move the gps from COM to the antenna
-    worldF_antenna = worldF_com + worldF_R_bodyF_ * config_->bodyF_gps_sensor_position;
+    worldF_antenna = worldF_com + worldF_ROV_bodyF_ * config_->bodyF_gps_sensor_position;
 
     //add noise and come back to map coordinates
     worldF_antenna.x() += gpsNoiseX(generator);
@@ -478,7 +502,7 @@ void VehicleSimulator::SimulateSensors()
     /////   MAGNETOMETER   /////
     Eigen::Vector3d m = { 23186.6 * 1E-9, 0.0 * 1E-9, 41122.0 * 1E-9 };  // Example of magnetic field at lat long: 44.4056° N, 8.9463° E
 
-    Eigen::Vector3d ned_m = worldF_R_bodyF_.transpose() * m;
+    Eigen::Vector3d ned_m = worldF_ROV_bodyF_.transpose() * m;
 
     std::normal_distribution<double> magnetometerNoiseX(0.0, config_->sensorsNoise.magnetometer_stdd.x());
     std::normal_distribution<double> magnetometerNoiseY(0.0, config_->sensorsNoise.magnetometer_stdd.y());
@@ -527,7 +551,7 @@ void VehicleSimulator::SimulateSensors()
     imuMsg_.stamp.nanosec = now_stamp_nanosecs;
     Eigen::Vector6d bodyF_relativeAcceleration;
     Eigen::Vector3d worldF_gravity = { 0.0, 0.0, -9.81 };
-    bodyF_relativeAcceleration.segment(0, 3) = bodyF_relativeAcceleration_projected_.segment(0, 3) + worldF_R_bodyF_.transpose() * worldF_gravity;
+    bodyF_relativeAcceleration.segment(0, 3) = bodyF_relativeAcceleration_projected_.segment(0, 3) + worldF_ROV_bodyF_.transpose() * worldF_gravity;
 
     // !!!!Matrice di corpo rigido per le accelerazioni? (TODO -> RICERCA/RICAVA FORMULA)
     // !Eigen::Matrix6d bodyF_RBM_imu = config_->bodyF_imu_sensor_pose.LinearVector().GetRigidBodyMatrix();
@@ -608,7 +632,7 @@ void VehicleSimulator::SimulateSensors()
     //Eigen::Vector3d vehicle_pos;
     //ctb::LatLong2LocalUTM(vehiclePos_, altitude_, centroidLocation_, vehicle_pos);
     //tf2::Quaternion q;
-    //Eigen::Quaterniond eq(worldF_R_bodyF_);
+    //Eigen::Quaterniond eq(worldF_ROV_bodyF_);
 
     //q.setEuler( bodyF_orientation_.Pitch(), bodyF_orientation_.Roll(), bodyF_orientation_.Yaw()); // i used it
 
@@ -625,7 +649,7 @@ void VehicleSimulator::SimulateSensors()
     tf_broadcaster_->sendTransform(t_stamp);
 
 
-    //Eigen::Quaterniond eq1(worldF_R_bodyF_);
+    //Eigen::Quaterniond eq1(worldF_ROV_bodyF_);
     tf2::Quaternion q2;
     q2.setRPY(bodyF_orientation_.Roll(),bodyF_orientation_.Pitch(),bodyF_orientation_.Yaw());
     //tf2::quaternionEigenToTF(eq1, q1);
@@ -673,9 +697,9 @@ void VehicleSimulator::SimulateSensors()
     t_stamp_ROV.header.stamp = this->get_clock()->now();
     t_stamp_ROV.header.frame_id = "world";
     t_stamp_ROV.child_frame_id = "cableS";
-    t_stamp_ROV.transform.translation.x = cableS_pos.x();
-    t_stamp_ROV.transform.translation.y = cableS_pos.y();
-    t_stamp_ROV.transform.translation.z = cableS_pos.z();
+    t_stamp_ROV.transform.translation.x = cableStart_cartesian_.x();
+    t_stamp_ROV.transform.translation.y = cableStart_cartesian_.y();
+    t_stamp_ROV.transform.translation.z = cableStart_cartesian_.z();
     t_stamp_ROV.transform.rotation.x = q_ulisse.x();
     t_stamp_ROV.transform.rotation.y = q_ulisse.y();
     t_stamp_ROV.transform.rotation.z = q_ulisse.z();
@@ -685,9 +709,9 @@ void VehicleSimulator::SimulateSensors()
     t_stamp_ROV.header.stamp = this->get_clock()->now();
     t_stamp_ROV.header.frame_id = "world";
     t_stamp_ROV.child_frame_id = "cableE";
-    t_stamp_ROV.transform.translation.x = cableEndPosXY_.x();
-    t_stamp_ROV.transform.translation.y = cableEndPosXY_.y();
-    t_stamp_ROV.transform.translation.z = cableEndPosXY_.z();
+    t_stamp_ROV.transform.translation.x = cableEnd_cartesian_.x();
+    t_stamp_ROV.transform.translation.y = cableEnd_cartesian_.y();
+    t_stamp_ROV.transform.translation.z = cableEnd_cartesian_.z();
     t_stamp_ROV.transform.rotation.x = q2.x();
     t_stamp_ROV.transform.rotation.y = q2.y();
     t_stamp_ROV.transform.rotation.z = q2.z();
