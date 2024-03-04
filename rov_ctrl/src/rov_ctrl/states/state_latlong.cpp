@@ -136,7 +136,7 @@ namespace states {
 
             //Set the vector that has to been align to the distance vector
             alignToTargetTask_->SetRobotAxis2Align(Eigen::Vector3d(1, 0, 0), rov::robotModelID::blueROV);
-
+            alignToTargetTask_->ExternalActivationFunction() = Eigen::MatrixXd::Identity(alignToTargetTask_->TaskSpace(), alignToTargetTask_->TaskSpace());
 
 
             //To avoid the case in which the error between the goal heading and the current heading is too big
@@ -159,6 +159,13 @@ namespace states {
         }
 
         //std::cout << "STATE LATLONG" << std::endl;
+
+        return fsm::ok;
+    }
+
+    fsm::retval StateLatLong::OnExit(){
+        cartesianDistanceTask_->ExternalActivationFunction() = 0.0 * Eigen::MatrixXd::Identity(cartesianDistanceTask_->TaskSpace(), cartesianDistanceTask_->TaskSpace());
+        alignToTargetTask_->ExternalActivationFunction() = 0.0 * Eigen::MatrixXd::Identity(alignToTargetTask_->TaskSpace(), alignToTargetTask_->TaskSpace());
 
         return fsm::ok;
     }

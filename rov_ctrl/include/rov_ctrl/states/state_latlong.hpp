@@ -20,6 +20,7 @@ namespace states {
         ~StateLatLong() override;
         fsm::retval OnEntry() override;
         fsm::retval Execute() override;
+        fsm::retval OnExit() override;
 
         LatLong goalPosition;
         double goalAltitude;

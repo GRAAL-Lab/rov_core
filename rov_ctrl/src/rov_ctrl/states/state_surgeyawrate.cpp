@@ -88,6 +88,14 @@ namespace states {
 
         return fsm::ok;
     }
+
+    fsm::retval StateSurgeYawRate::OnExit(){
+        linearVelocityTask_->ExternalActivationFunction() = 0.0 * Eigen::MatrixXd::Identity(linearVelocityTask_->TaskSpace(), linearVelocityTask_->TaskSpace());
+        angularVelocityTask_->ExternalActivationFunction() = 0.0 * Eigen::MatrixXd::Identity(angularVelocityTask_->TaskSpace(), angularVelocityTask_->TaskSpace());
+
+        return fsm::ok;
+    }
+
 } // namespace states
 } // namespace rov
 

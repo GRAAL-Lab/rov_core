@@ -397,12 +397,12 @@ void ROVController::Run(){
         // Computing Kinematic Control via TPIK
         yTpik_ = solver_->ComputeVelocities();
 
-        //for (int i = 0; i < yTpik_.size(); i++) {
-        //    if (std::isnan(yTpik_(i))) {
-        //        yTpik_(i) = 0.0;
-        //        RCLCPP_INFO(this->get_logger(), "NaN requested velocity");
-        //    }
-        //}
+        for (int i = 0; i < yTpik_.size(); i++) {
+            if (std::isnan(yTpik_(i))) {
+                yTpik_(i) = 0.0;
+                RCLCPP_INFO(this->get_logger(), "NaN requested velocity");
+            }
+        }
     }
 
 

@@ -116,6 +116,9 @@ namespace states {
 
     fsm::retval StateHold::OnExit()
     {
+        cartesianDistanceTask_->ExternalActivationFunction() = 0.0 * Eigen::MatrixXd::Identity(cartesianDistanceTask_->TaskSpace(), cartesianDistanceTask_->TaskSpace());
+        linearVelocityTask_->ExternalActivationFunction() = 0.0 * Eigen::MatrixXd::Identity(linearVelocityTask_->TaskSpace(), linearVelocityTask_->TaskSpace());
+
         return fsm::ok;
     }
 }
