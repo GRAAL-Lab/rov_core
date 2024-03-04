@@ -27,6 +27,10 @@ namespace states {
             return false;
         if (!ctb::GetParam(state, acceptanceRadius, "acceptanceRadius"))
             return false;
+        if (!ctb::GetParam(state, minZalignmentError_, "minZalignmentError"))
+            return false;
+        if (!ctb::GetParam(state, maxZalignmentError_, "maxZalignmentError"))
+            return false;
         return true;
     }
 
@@ -148,7 +152,7 @@ namespace states {
             double taskGain = rml::DecreasingBellShapedFunction(minHeadingError_, maxHeadingError_, 0, 1.0, headingError);
 
             double alignmentError = absoluteAxisAlignmentTask_->ControlVariable().norm();
-            double alignGain = rml::DecreasingBellShapedFunction(0.2, 0.4, 0, 1.0, alignmentError);
+            double alignGain = rml::DecreasingBellShapedFunction(minZalignmentError_, maxZalignmentError_, 0, 1.0, alignmentError);
 
 
             //Set the gain of the cartesian distance task

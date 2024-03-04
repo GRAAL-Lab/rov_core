@@ -108,6 +108,7 @@ namespace states {
             double taskGain = 1;
             //Set the gain of the cartesian distance task
             cartesianDistanceTask_->ExternalActivationFunction() = taskGain * Eigen::MatrixXd::Identity(cartesianDistanceTask_->TaskSpace(), cartesianDistanceTask_->TaskSpace());
+            linearVelocityTask_->ExternalActivationFunction() = taskGain * Eigen::MatrixXd::Identity(linearVelocityTask_->TaskSpace(), linearVelocityTask_->TaskSpace());
 
         }
         //std::cout << "STATE HOLD" << std::endl;
