@@ -66,41 +66,6 @@ namespace states {
         tNow_ = std::chrono::system_clock::now();
         totalElapsed_ = std::chrono::duration_cast<std::chrono::seconds>(tNow_ - tStart_);
 
-        //if (timeout != 0 && totalElapsed_.count() > timeout) {
-        //    std::cout << "Surge/YawRate Timeout reached!" << std::endl;
-        //    fsm_->ExecuteCommand(rov::commands::ID::halt);
-        //}
-
-        // SafetyBoundaries task: it's a velocity task base on the distance from the boundaries. The behaviour that has to achive is align to
-        // a desired escape directon and to generate a desired velocity. To do this we use the task AbsoluteAxisAlignment to cope with
-        // the align behavior activated in function of the internal activation function of the safety task.
-
-//        safetyBoundariesTask_->VehiclePosition() = ctrlData->inertialF_linearPosition;
-
-//        Eigen::MatrixXd Aexternal;
-
-//        Aexternal = safetyBoundariesTask_->InternalActivationFunction().maxCoeff()* Aexternal.setIdentity(
-//                        absoluteAxisAlignmentSafetyTask_->TaskSpace(), absoluteAxisAlignmentSafetyTask_->TaskSpace());
-//        absoluteAxisAlignmentSafetyTask_->ExternalActivationFunction() = Aexternal;
-
-//        safetyBoundariesTask_->ExternalActivationFunction() = 1.0 * Eigen::MatrixXd::Identity(safetyBoundariesTask_->TaskSpace(),
-//                                                                  safetyBoundariesTask_->TaskSpace());
-
-//        absoluteAxisAlignmentSafetyTask_->SetRobotAxis2Align(Eigen::Vector3d(1, 0, 0), ulisse::robotModelID::ASV);
-//        absoluteAxisAlignmentSafetyTask_->SetDirectionAlignment(safetyBoundariesTask_->GetAlignVector(rml::FrameID::WorldFrame),
-//                                                                                                   rml::FrameID::WorldFrame);
-
-        // To avoid the case in which the error between the goal heading and the current heading is too big
-        // we activate the the cartesian distance through the gain based on a bell-shaped function on the heading error
-
-        // Compute the heading error
-        //double headingErrorsafety = absoluteAxisAlignmentSafetyTask_->ControlVariable().norm();
-
-        // Compute the gain of the safety task
-        //double taskGainSafety = rml::DecreasingBellShapedFunction(minHeadingError_, maxHeadingError_, 0, 1.0, headingErrorsafety);
-
-        // Set the gain of the cartesian distance task
-        //safetyBoundariesTask_->TaskParameter().gain = taskGainSafety * safetyBoundariesTask_->TaskParameter().conf_gain;
 
         // Set a velocity to point to the circle in case of the catamaran  slips away.
         absoluteAxisAlignmentTask_->SetDirectionAlignment(Eigen::Vector3d(0, 0, 1),rml::FrameID::WorldFrame);
@@ -117,6 +82,9 @@ namespace states {
         angularVelocityTask_->SetReferenceRate(Eigen::Vector3d(goalRollRate, goalPitchRate, goalYawRate), robotModel->BodyFrameID());
         //angularVelocityTask_->ExternalActivationFunction() = taskGain * Eigen::MatrixXd::Identity(angularVelocityTask_->TaskSpace(), angularVelocityTask_->TaskSpace());
 
+        double alignmentError = absoluteAxisAlignmentTask_->ControlVariable().norm();
+        double alignGain = rml::DecreasingBellShapedFunction(0.2, 0.4, 0, 1.0, alignmentError);
+        linearVelocityTask_->ExternalActivationFunction() = alignGain * Eigen::MatrixXd::Identity(linearVelocityTask_->TaskSpace(), linearVelocityTask_->TaskSpace());
 
         return fsm::ok;
     }

@@ -84,6 +84,8 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
 
     thrustersSub_ = this->create_subscription<rov_msgs::msg::ThrustersReference>(rov_msgs::topicnames::llc_thrusters_reference_perc, 1,
         std::bind(&VehicleSimulator::ThrustersReferenceCB, this, _1));
+    winchSub_ = this->create_subscription<rov_msgs::msg::CableLengthReference>(rov_msgs::topicnames::reference_cable_length, 1,
+                                                 std::bind(&VehicleSimulator::CableLengthReferenceCB, this, _1));
     simulatedSystemAsvSub_ = this->create_subscription<ulisse_msgs::msg::SimulatedSystem>("/ulisse/simulated_system", 1,
                                                                                           std::bind(&VehicleSimulator::ASVsimulatedSysCB, this, _1));
 
@@ -151,7 +153,8 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     worldF_cable_ending =  worldF_ROV_bodyF_ * bodyF_cable_ending_;
     worldF_cable_ending =  worldF_cable_ending + pos_initial;
     ctb::LocalUTM2LatLong(worldF_cable_ending, centroidLocation_, cableEndPos_, cableEnd_altitude_);
-    rovModel_.SetCableLength(5.0);
+    ref_cableLength_ = 5.0;
+    rovModel_.SetCableLength(ref_cableLength_);
 
     //Eigen::Vector3d worldF_cable_starting;
     //ctb::LatLong cable_starting_, cable_ending_;
@@ -417,7 +420,7 @@ void VehicleSimulator::SimulateActuation()
     bodyF_orientation_.Pitch(std::fmod((previous_bodyF_orientation_.Pitch() + rpyEulerRates(1) * Ts_) + 2 * M_PI, 2 * M_PI));
     bodyF_orientation_.Yaw(std::fmod((previous_bodyF_orientation_.Yaw() + rpyEulerRates(2) * Ts_) + 2 * M_PI, 2 * M_PI));
 
-    // update cable ending pos
+    // Update cable ending and starting position
     Eigen::Vector3d worldF_cable_ending, worldF_cable_starting;
     worldF_cable_ending =  worldF_ROV_bodyF_ * bodyF_cable_ending_;
     worldF_cable_ending =  worldF_cable_ending + ROVpose_;
@@ -432,9 +435,11 @@ void VehicleSimulator::SimulateActuation()
     ctb::LatLong2LocalUTM(ASV_latlong, groundTruth_UlisseMsg_.inertialframe_linear_position.altitude, centroidLocation_, ASVpos);
     cableStart_cartesian_ = worldF_cable_starting + ASVpos;
     ctb::LocalUTM2LatLong(cableStart_cartesian_, centroidLocation_, cableStartPos_, cableStart_altitude_);
-    //cableStartPos_.latitude = groundTruth_UlisseMsg_.inertialframe_linear_position.latlong.latitude;
-    //cableStartPos_.longitude = groundTruth_UlisseMsg_.inertialframe_linear_position.latlong.longitude;
     cableStart_altitude_ = 0.0;
+
+    // Set Cable Length
+    float rpm = 1.0;
+    rovModel_.RunCableWinchToReachLength(rpm, ref_cableLength_, Ts_);
     //float v;
     //rovModel_.RunCableWinch(1.0, v);
     //rovModel_.UpdateCableLength(v, Ts_);
@@ -805,6 +810,10 @@ void VehicleSimulator::ThrustersReferenceCB(const rov_msgs::msg::ThrustersRefere
     }
 
     //motorTimeout_.Start();
+}
+
+void VehicleSimulator::CableLengthReferenceCB(const rov_msgs::msg::CableLengthReference::SharedPtr msg){
+    ref_cableLength_ = msg->reference_cable_length;
 }
 
 void VehicleSimulator::ASVsimulatedSysCB(const ulisse_msgs::msg::SimulatedSystem::SharedPtr msg){

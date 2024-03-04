@@ -11,6 +11,7 @@
 #include "rov_msgs/msg/magnetometer.hpp"
 #include "rov_msgs/msg/pressure_data.hpp"
 #include "rov_msgs/msg/cable_data.hpp"
+#include "rov_msgs/msg/cable_length_reference.hpp"
 
 #include "rov_sim/simulator_defines.hpp"
 #include "underwater_vehicle_model/underwater_vehicle.hpp"
@@ -59,7 +60,7 @@ class VehicleSimulator : public rclcpp::Node {
 
     // cable variable
     ctb::LatLong cableStartPos_, cableEndPos_;
-    double cableLength_;
+    float cableLength_, ref_cableLength_;
     double cableStart_altitude_, cableEnd_altitude_;
     Eigen::Vector3d bodyF_cable_ending_, bodyF_cable_starting_;
 
@@ -85,6 +86,7 @@ class VehicleSimulator : public rclcpp::Node {
     rov_msgs::msg::SimulatedSystem groundTruth_UlisseMsg_;
     rov_msgs::msg::Forces forcesMsg_;
     rov_msgs::msg::CableData cableMsg_;
+    //rov_msgs::msg::CableLengthReference cableRefMsg_;
 
     geometry_msgs::msg::PoseStamped pt_;
 
@@ -127,6 +129,7 @@ class VehicleSimulator : public rclcpp::Node {
     rclcpp::Publisher<rov_msgs::msg::CableData>::SharedPtr cableDataPub_;
 
     rclcpp::Subscription<rov_msgs::msg::ThrustersReference>::SharedPtr thrustersSub_;
+    rclcpp::Subscription<rov_msgs::msg::CableLengthReference>::SharedPtr winchSub_;
     rclcpp::Subscription<ulisse_msgs::msg::SimulatedSystem>::SharedPtr simulatedSystemAsvSub_;
 
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr posePub_;
@@ -182,6 +185,7 @@ public:
     double GetCurrentTimeStamp() const;
 
     void ThrustersReferenceCB(const rov_msgs::msg::ThrustersReference::SharedPtr msg);
+    void CableLengthReferenceCB(const rov_msgs::msg::CableLengthReference::SharedPtr msg);
     void ASVsimulatedSysCB(const ulisse_msgs::msg::SimulatedSystem::SharedPtr msg);
 };
 }

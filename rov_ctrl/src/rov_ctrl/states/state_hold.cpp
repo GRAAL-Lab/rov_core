@@ -97,28 +97,6 @@ namespace states {
             cartesianDistanceTask_->ExternalActivationFunction() = 0.0 * Eigen::MatrixXd::Identity(cartesianDistanceTask_->TaskSpace(), cartesianDistanceTask_->TaskSpace());
 
         } else if (hysteresisState_ == HysteresisState::ComeBack) {
-            /*
-            // If the previos action was comeback to the hold acceptance radius, keep do it until d < minAcceptanceRadius.
-            double surgeReference, swayReference, heaveReference;
-            if(goalDistance_x > 0.0)
-                surgeReference = rml::IncreasingBellShapedFunction(minAcceptanceRadius, maxAcceptanceRadius, 0.0, maxSurgeComeback2Hold_, goalDistance_x);
-            else
-                surgeReference = -rml::IncreasingBellShapedFunction(minAcceptanceRadius, maxAcceptanceRadius, 0.0, maxSurgeComeback2Hold_, -goalDistance_x);
-
-            if(goalDistance_y > 0.0)
-                swayReference = rml::IncreasingBellSha0pedFunction(minAcceptanceRadius, maxAcceptanceRadius, 0.0, maxSurgeComeback2Hold_, goalDistance_y);
-            else
-                surgeReference = -rml::IncreasingBellShapedFunction(minAcceptanceRadius, maxAcceptanceRadius, 0.0, maxSurgeComeback2Hold_, -goalDistance_y);
-
-            if(goalDistance_z > 0.0)
-                heaveReference = rml::IncreasingBellShapedFunction(minAcceptanceRadius, maxAcceptanceRadius, 0.0, maxSurgeComeback2Hold_, goalDistance_z);
-            else
-                heaveReference = -rml::IncreasingBellShapedFunction(minAcceptanceRadius, maxAcceptanceRadius, 0.0, maxSurgeComeback2Hold_, -goalDistance_z);
-
-            // Set a velocity to point to the circle in case of the catamaran  slips away.
-            linearVelocityTask_->SetReferenceRate(Eigen::Vector3d(surgeReference, swayReference, heaveReference), robotModel->BodyFrameID());
-            linearVelocityTask_->Update();
-            */
 
             //Set the distance vector to the target
             cartesianDistanceTask_->SetTargetDistance(Eigen::Vector3d(goalDistance_x, goalDistance_y, goalDistance_z), rml::FrameID::WorldFrame);

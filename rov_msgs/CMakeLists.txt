@@ -46,6 +46,7 @@ rosidl_generate_interfaces(rov_msgs
   "msg/DynamicPidControl.msg"
   "msg/VehicleStatus.msg"
   "msg/CableData.msg"
+  "msg/CableLengthReference.msg"
 
   # Commands
   "msg/CommandHold.msg"
@@ -59,7 +60,7 @@ rosidl_generate_interfaces(rov_msgs
   #"msg/PolygonPath.msg"
   "msg/NavFilterData.msg"
   "msg/TaskStatus.msg"
-
+	
   
 
   ## Services ##
