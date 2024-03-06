@@ -368,9 +368,12 @@ void ROVController::Run(){
     //Eigen::Vector3d bodyF_dirV;
     bodyF_dirV = bodyF_R_worldF * dirV.head(3);
     if (uFsm_.GetCurrentStateName() == rov::states::ID::velocity) {
-        stateSurgeYawRate_->goalSurge = bodyF_dirV[0] * reference_speed[0];
-        stateSurgeYawRate_->goalSway = bodyF_dirV[1] * reference_speed[1];
-        stateSurgeYawRate_->goalHeave = bodyF_dirV[2] * reference_speed[2];
+        //stateSurgeYawRate_->goalSurge = bodyF_dirV[0] * reference_speed[0];
+        //stateSurgeYawRate_->goalSway = bodyF_dirV[1] * reference_speed[1];
+        //stateSurgeYawRate_->goalHeave = bodyF_dirV[2] * reference_speed[2];
+        stateSurgeYawRate_->goalSurge = dirV[0] * reference_speed[0];
+        stateSurgeYawRate_->goalSway = dirV[1] * reference_speed[1];
+        stateSurgeYawRate_->goalHeave = dirV[2] * reference_speed[2];
         stateSurgeYawRate_->goalRollRate = dirV[3] * reference_speed[3];
         stateSurgeYawRate_->goalPitchRate = dirV[4] * reference_speed[4];
         stateSurgeYawRate_->goalYawRate = dirV[5] * reference_speed[5];

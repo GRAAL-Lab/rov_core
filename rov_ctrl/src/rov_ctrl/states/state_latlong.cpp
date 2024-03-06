@@ -125,9 +125,9 @@ namespace states {
         if (goalDistance < acceptanceRadius) {
             std::cout << "*** GOAL REACHED! ***" << std::endl;
             fsm_->EmitEvent(rov::events::names::neargoalposition, rov::events::priority::medium);
-            cartesianDistanceTask_->ExternalActivationFunction() = 0.0 * Eigen::MatrixXd::Identity(cartesianDistanceTask_->TaskSpace(), cartesianDistanceTask_->TaskSpace());
+            //cartesianDistanceTask_->ExternalActivationFunction() = 0.0 * Eigen::MatrixXd::Identity(cartesianDistanceTask_->TaskSpace(), cartesianDistanceTask_->TaskSpace());
         } else {
-
+/*
             if(goalDistance_z > 0.5){
                 cartesianDistanceTask_->SetTargetDistance(Eigen::Vector3d(0.0, 0.0, goalDistance_z), rml::FrameID::WorldFrame);
             }
@@ -135,6 +135,8 @@ namespace states {
                 //Set the distance vector to the target
                 cartesianDistanceTask_->SetTargetDistance(Eigen::Vector3d(goalDistance_x, goalDistance_y, goalDistance_z), rml::FrameID::WorldFrame);
             }
+      */
+            cartesianDistanceTask_->SetTargetDistance(Eigen::Vector3d(goalDistance_x, goalDistance_y, goalDistance_z), rml::FrameID::WorldFrame);
             //Set the align vector to the target
             alignToTargetTask_->SetTargetDistance(Eigen::Vector3d(goalDistance_x, goalDistance_y, 0), rml::FrameID::WorldFrame);
 
@@ -149,16 +151,20 @@ namespace states {
             //compute the heading error
             double headingError = alignToTargetTask_->ControlVariable().norm();
             //compute the gain of the cartesian distance
-            double taskGain = rml::DecreasingBellShapedFunction(minHeadingError_, maxHeadingError_, 0, 1.0, headingError);
+            double taskGain;
+            if(sqrt (pow(goalDistance_x,2) + pow(goalDistance_y,2)) > 0.5){
+                taskGain = rml::DecreasingBellShapedFunction(minHeadingError_, maxHeadingError_, 0, 1.0, headingError);
+            }
+            else taskGain = 1;
 
             double alignmentError = absoluteAxisAlignmentTask_->ControlVariable().norm();
             double alignGain = rml::DecreasingBellShapedFunction(minZalignmentError_, maxZalignmentError_, 0, 1.0, alignmentError);
 
 
             //Set the gain of the cartesian distance task
-            cartesianDistanceTask_->ExternalActivationFunction() = taskGain * Eigen::MatrixXd::Identity(cartesianDistanceTask_->TaskSpace(), cartesianDistanceTask_->TaskSpace());
-            cartesianDistanceTask_->ExternalActivationFunction()(cartesianDistanceTask_->TaskSpace()-1, cartesianDistanceTask_->TaskSpace()-1) = 1.0;
-            cartesianDistanceTask_->ExternalActivationFunction() = alignGain * cartesianDistanceTask_->ExternalActivationFunction();
+            cartesianDistanceTask_->ExternalActivationFunction() = alignGain * taskGain * Eigen::MatrixXd::Identity(cartesianDistanceTask_->TaskSpace(), cartesianDistanceTask_->TaskSpace());
+            //cartesianDistanceTask_->ExternalActivationFunction()(cartesianDistanceTask_->TaskSpace()-1, cartesianDistanceTask_->TaskSpace()-1) = 1.0;
+            //cartesianDistanceTask_->ExternalActivationFunction() = alignGain * cartesianDistanceTask_->ExternalActivationFunction();
             //std::cout << "cartesianDistanceTask_->ExternalActivationFunction: " << cartesianDistanceTask_->ExternalActivationFunction();
         }
 
