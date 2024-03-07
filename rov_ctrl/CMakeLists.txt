@@ -135,7 +135,7 @@ install(TARGETS
 )
   
 install(DIRECTORY
-  #launch
+  launch
   conf
   DESTINATION share/${PROJECT_NAME}
 )

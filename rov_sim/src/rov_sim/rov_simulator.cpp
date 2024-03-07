@@ -433,7 +433,9 @@ void VehicleSimulator::SimulateActuation()
     ASV_latlong.latitude = groundTruth_UlisseMsg_.inertialframe_linear_position.latlong.latitude;
     ASV_latlong.longitude = groundTruth_UlisseMsg_.inertialframe_linear_position.latlong.longitude;
     ctb::LatLong2LocalUTM(ASV_latlong, groundTruth_UlisseMsg_.inertialframe_linear_position.altitude, centroidLocation_, ASVpos);
-    cableStart_cartesian_ = worldF_cable_starting + ASVpos;
+    cableStart_cartesian_.x() = worldF_cable_starting.x() + ASVpos.y();
+    cableStart_cartesian_.y() = worldF_cable_starting.y() + ASVpos.x();
+    cableStart_cartesian_.z() = worldF_cable_starting.z() + ASVpos.z();
     ctb::LocalUTM2LatLong(cableStart_cartesian_, centroidLocation_, cableStartPos_, cableStart_altitude_);
     cableStart_altitude_ = 0.0;
 
@@ -702,8 +704,8 @@ void VehicleSimulator::SimulateSensors()
     t_stamp_ROV.header.stamp = this->get_clock()->now();
     t_stamp_ROV.header.frame_id = "world";
     t_stamp_ROV.child_frame_id = "cableS";
-    t_stamp_ROV.transform.translation.x = cableStart_cartesian_.x();
-    t_stamp_ROV.transform.translation.y = cableStart_cartesian_.y();
+    t_stamp_ROV.transform.translation.x = cableStart_cartesian_.x(); // inverted
+    t_stamp_ROV.transform.translation.y = cableStart_cartesian_.y(); // inverted
     t_stamp_ROV.transform.translation.z = cableStart_cartesian_.z();
     t_stamp_ROV.transform.rotation.x = q_ulisse.x();
     t_stamp_ROV.transform.rotation.y = q_ulisse.y();
