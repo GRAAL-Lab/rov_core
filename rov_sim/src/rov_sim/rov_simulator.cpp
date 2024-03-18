@@ -73,6 +73,8 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     forcesPub_ = this->create_publisher<rov_msgs::msg::Forces>(rov_msgs::topicnames::forces, 1);
     cableDataPub_ = this->create_publisher<rov_msgs::msg::CableData>(rov_msgs::topicnames::cable_data,1);
     posePub_= this->create_publisher<geometry_msgs::msg::PoseStamped>(rov_msgs::topicnames::posROV, 1);
+    visualizationPub_ = this->create_publisher<visualization_msgs::msg::Marker> ("visualization_marker", 0 );
+
     tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
     tf_broadcaster_ROV = std::make_shared<tf2_ros::TransformBroadcaster>(this);
 
@@ -160,7 +162,6 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     //ctb::LatLong cable_starting_, cable_ending_;
     //worldF_cable_starting = {0, 0, 0};
     //ctb::LocalUTM2LatLong(worldF_cable_starting, centroidLocation_, cableStartPos_, cableStart_altitude_);
-
     //std::cout << "Please Enter a command for ROV motion: " << std::endl;
     std::cout << "Motion type : hold" << std::endl;
     option = rov::inputs::ID::hold;
@@ -325,6 +326,14 @@ void VehicleSimulator::SimulateActuation()
         0, sin(bodyF_orientation_.Roll()), cos(bodyF_orientation_.Roll());
 
     worldF_ROV_bodyF_ = Rz * Ry * Rx;
+
+    Eigen::RotationMatrix Rz_n;
+    Rz_n << cos(M_PI/2), -sin(M_PI/2), 0,
+        sin(M_PI/2), cos(M_PI/2), 0,
+        0, 0, 1;
+    worldF_ROV_meshF_ = worldF_ROV_bodyF_ * Rz_n;
+    bodyF_ROVmesh_ = worldF_ROV_meshF_.eulerAngles(2, 1, 0);
+
 
     Eigen::RotationMatrix asvRz, asvRy, asvRx;
     asvRz << cos(groundTruth_UlisseMsg_.bodyframe_angular_position.yaw), -sin(groundTruth_UlisseMsg_.bodyframe_angular_position.yaw), 0,
@@ -690,6 +699,60 @@ void VehicleSimulator::SimulateSensors()
     pt_.pose.orientation.y = q2.y();
     pt_.pose.orientation.z = q2.z();
     pt_.pose.orientation.w = q2.w();
+
+
+
+    tf2::Quaternion rov2_q;
+    //rov2_q.setRPY(bodyF_orientation_.Roll(),bodyF_orientation_.Pitch(),bodyF_orientation_.Yaw() + M_PI/2);
+    rov2_q.setEuler(bodyF_ROVmesh_.Yaw(),bodyF_ROVmesh_.Pitch(),bodyF_ROVmesh_.Roll());
+
+    visualization_msgs::msg::Marker marker;
+    marker.header.frame_id = "world";
+    marker.header.stamp = this->get_clock()->now();
+    marker.ns = "rov_link";
+    marker.id = 10;
+    //marker.type = visualization_msgs::msg::Marker::CUBE;
+    marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
+    //marker.action = visualization_msgs::msg::Marker::ADD;
+    /*marker.pose.position.x = ROVpose_.x();
+    marker.pose.position.y = ROVpose_.y();
+    marker.pose.position.z = altitude_;
+    marker.pose.orientation.x = q2.x();
+    marker.pose.orientation.y = q2.y();
+    marker.pose.orientation.z = q2.z();
+    marker.pose.orientation.w = q2.w();*/
+
+    marker.pose.position.x = ROVpose_.x();
+    marker.pose.position.y = ROVpose_.y();
+    marker.pose.position.z = altitude_;
+    marker.pose.orientation.x = rov2_q.x();
+    marker.pose.orientation.y = rov2_q.y();
+    marker.pose.orientation.z = rov2_q.z();
+    marker.pose.orientation.w = rov2_q.w();
+    marker.scale.x = 1;
+    marker.scale.y = 1;
+    marker.scale.z = 1;
+    marker.color.a = 1.0; // Don't forget to set the alpha!
+    marker.color.r = 0.0;
+    marker.color.g = 0.0;
+    marker.color.b = 1.0;
+
+    //marker.scale.x = 0.457;
+    //marker.scale.y = 0.338;
+    //marker.scale.z = 0.254;
+    /*
+    marker.scale.x = 1;
+    marker.scale.y = 1;
+    marker.scale.z = 1;
+    marker.color.a = 1.0; // Don't forget to set the alpha!
+    marker.color.r = 0.0;
+    marker.color.g = 0.0;
+    marker.color.b = 1.0;*/
+    //only if using a MESH_RESOURCE marker type:
+    //marker.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae";/home/graal/ros2_ws/src/rov_core/rov_sim/model
+
+    marker.mesh_resource = "package://rov_sim/meshes/BlueRov2.dae";
+    visualizationPub_->publish( marker );
 
     Eigen::Vector3d cableS_pos;
     ctb::LatLong2LocalUTM(cableStartPos_, cableStart_altitude_, centroidLocation_, cableS_pos);

@@ -22,6 +22,7 @@ find_package(rov_ctrl REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
+find_package(visualization_msgs REQUIRED)
 
 # Add files in the tree of "Projects" view in QtCreator
 file(GLOB_RECURSE SOURCE_FILES
@@ -30,7 +31,9 @@ file(GLOB_RECURSE SOURCE_FILES
     "*.xml"
     "launch/*.py"
     "conf/*"
+    "meshes/*"
 )
+
 add_custom_target(.Files. SOURCES ${SOURCE_FILES})
 
 include_directories(
@@ -52,6 +55,7 @@ ament_target_dependencies(
     geometry_msgs
     tf2
     tf2_ros
+    visualization_msgs
     ) #add rov message
 target_link_libraries(VehicleSimulatorClass ${underwater_vehicle_model_LIBRARIES} Geographic rml)
 
@@ -75,6 +79,7 @@ install(TARGETS
 install(DIRECTORY
   #logs
   #launch
+  meshes
   conf
   DESTINATION share/${PROJECT_NAME}/
 )

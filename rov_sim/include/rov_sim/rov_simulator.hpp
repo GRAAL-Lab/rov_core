@@ -38,6 +38,10 @@
 
 #include "rov_msgs/topicnames.hpp"
 
+#include <visualization_msgs/msg/marker.hpp>
+#include "visualization_msgs/msg/marker.h"
+//#include "visualization_msgs/InteractiveMarker.h"
+
 namespace rov {
 
 class VehicleSimulator : public rclcpp::Node {
@@ -51,6 +55,7 @@ class VehicleSimulator : public rclcpp::Node {
     std::chrono::nanoseconds iter_elapsed_, total_elapsed_;
 
     rml::EulerRPY bodyF_orientation_, previous_bodyF_orientation_;
+    rml::EulerRPY bodyF_ROVmesh_;
     Eigen::Vector6d bodyF_relativeVelocity_, worldF_relativeVelocity_, worldF_velocity_, worldF_waterVelocity_;
     Eigen::Vector6d bodyF_relativeAcceleration_, worldF_relativeAcceleration_, bodyF_relativeAcceleration_projected_, bodyF_wavesEffects_;
 
@@ -107,6 +112,8 @@ class VehicleSimulator : public rclcpp::Node {
     rclcpp::Publisher<rov_msgs::msg::IMUData>::SharedPtr imuPub_;
     rclcpp::Publisher<rov_msgs::msg::Magnetometer>::SharedPtr magnetometerPub_;
     rclcpp::Publisher<rov_msgs::msg::PressureData>::SharedPtr pressurePub_;
+
+    rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr visualizationPub_;
     /*
     rclcpp::Publisher<ulisse_msgs::msg::DVLData>::SharedPtr dvlPub_;
     rclcpp::Publisher<ulisse_msgs::msg::FOGData>::SharedPtr fogPub_;
@@ -143,9 +150,13 @@ class VehicleSimulator : public rclcpp::Node {
 
     Eigen::RotationMatrix worldF_ROV_bodyF_;
     Eigen::RotationMatrix worldF_ASV_bodyF_;
+    Eigen::RotationMatrix worldF_ROV_meshF_;
 
     std::shared_ptr<SimulatorConfiguration> config_;
     UnderwaterVehicle rovModel_;
+
+    // Rviz
+    visualization_msgs::msg::Marker vehicleMarker_;
 
     int option; // motion of ROV
 
