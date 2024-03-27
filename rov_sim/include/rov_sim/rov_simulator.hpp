@@ -40,6 +40,8 @@
 
 #include <visualization_msgs/msg/marker.hpp>
 #include "visualization_msgs/msg/marker.h"
+#include "visualization_msgs/msg/marker_array.hpp"
+
 //#include "visualization_msgs/InteractiveMarker.h"
 
 namespace rov {
@@ -113,7 +115,8 @@ class VehicleSimulator : public rclcpp::Node {
     rclcpp::Publisher<rov_msgs::msg::Magnetometer>::SharedPtr magnetometerPub_;
     rclcpp::Publisher<rov_msgs::msg::PressureData>::SharedPtr pressurePub_;
 
-    rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr visualizationPub_;
+    //rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr visualizationPub_;
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr visualizationPub_;
     /*
     rclcpp::Publisher<ulisse_msgs::msg::DVLData>::SharedPtr dvlPub_;
     rclcpp::Publisher<ulisse_msgs::msg::FOGData>::SharedPtr fogPub_;
