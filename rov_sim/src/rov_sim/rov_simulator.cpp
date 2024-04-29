@@ -737,9 +737,9 @@ void VehicleSimulator::SimulateSensors()
     marker.scale.y = 1;
     marker.scale.z = 1;
     marker.color.a = 1.0; // Don't forget to set the alpha!
-    //marker.color.r = 0.859;
-    //marker.color.g = 1.0;
-    //marker.color.b = 1.0;
+    marker.color.r = 0.859;
+    marker.color.g = 1.0;
+    marker.color.b = 1.0;
 
     //marker.scale.x = 0.457;
     //marker.scale.y = 0.338;
@@ -749,9 +749,11 @@ void VehicleSimulator::SimulateSensors()
     marker.scale.y = 1;
     marker.scale.z = 1;
     marker.color.a = 1.0; // Don't forget to set the alpha!*/
-    marker.color.r = 0.0;
-    marker.color.g = 0.0;
-    marker.color.b = 1.0;
+
+    //marker.color.r = 0.0;
+    //marker.color.g = 0.0;
+    //marker.color.b = 1.0;
+
     //only if using a MESH_RESOURCE marker type:
     //marker.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae";/home/graal/ros2_ws/src/rov_core/rov_sim/model
 
