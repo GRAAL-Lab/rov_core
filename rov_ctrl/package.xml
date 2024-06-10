@@ -9,6 +9,8 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <depend>surface_vehicle_model</depend>
+  <depend>ulisse_msgs</depend>
   <build_depend>rclcpp</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>rov_msgs</build_depend>
