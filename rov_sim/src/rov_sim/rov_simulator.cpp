@@ -34,6 +34,7 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     //, dvlPubCounter_(0)
     //, fogPubCounter_(0)
     , realTime_(false) // we set a manual set sample time later
+    , ASVmsg(false)
 {
 
     config_ = std::make_shared<rov::SimulatorConfiguration>();
@@ -74,7 +75,7 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     cableDataPub_ = this->create_publisher<rov_msgs::msg::CableData>(rov_msgs::topicnames::cable_data,1);
     posePub_= this->create_publisher<geometry_msgs::msg::PoseStamped>(rov_msgs::topicnames::posROV, 1);
     //visualizationPub_ = this->create_publisher<visualization_msgs::msg::Marker> ("visualization_marker", 0 );
-    visualizationPub_ = this->create_publisher<visualization_msgs::msg::MarkerArray> ("visualization_marker_array", 0 );
+    //visualizationPub_ = this->create_publisher<visualization_msgs::msg::MarkerArray> ("visualization_marker_array", 0 ); // this one
 
     tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
     tf_broadcaster_ROV = std::make_shared<tf2_ros::TransformBroadcaster>(this);
@@ -446,7 +447,13 @@ void VehicleSimulator::SimulateActuation()
     cableStart_cartesian_.x() = worldF_cable_starting.x() + ASVpos.y();
     cableStart_cartesian_.y() = worldF_cable_starting.y() + ASVpos.x();
     cableStart_cartesian_.z() = worldF_cable_starting.z() + ASVpos.z();
-    ctb::LocalUTM2LatLong(cableStart_cartesian_, centroidLocation_, cableStartPos_, cableStart_altitude_);
+    if(ASVmsg)
+        ctb::LocalUTM2LatLong(cableStart_cartesian_, centroidLocation_, cableStartPos_, cableStart_altitude_);
+    else{
+        cableStart_cartesian_<< 1.0, 0.0, 0.0;
+        ctb::LocalUTM2LatLong(cableStart_cartesian_, centroidLocation_, cableStartPos_, cableStart_altitude_);
+    }
+
     cableStart_altitude_ = 0.0;
 
     // Set Cable Length
@@ -517,7 +524,7 @@ void VehicleSimulator::SimulateSensors()
 
 
     /////   MAGNETOMETER   /////
-    Eigen::Vector3d m = { 23186.6 * 1E-9, 0.0 * 1E-9, 41122.0 * 1E-9 };  // Example of magnetic field at lat long: 44.4056° N, 8.9463° E
+    Eigen::Vector3d m = { 23186.6 * 1E-9, 0.0 * 1E-9, 41122.0 * 1E-9 };  // Example of magnetic field at lat long: 44.4056Â° N, 8.9463Â° E
 
     Eigen::Vector3d ned_m = worldF_ROV_bodyF_.transpose() * m;
 
@@ -702,7 +709,7 @@ void VehicleSimulator::SimulateSensors()
     pt_.pose.orientation.w = q2.w();
 
 
-
+/*
     tf2::Quaternion rov2_q;
     //rov2_q.setRPY(bodyF_orientation_.Roll(),bodyF_orientation_.Pitch(),bodyF_orientation_.Yaw() + M_PI/2);
     rov2_q.setEuler(bodyF_ROVmesh_.Yaw(),bodyF_ROVmesh_.Pitch(),bodyF_ROVmesh_.Roll());
@@ -718,13 +725,14 @@ void VehicleSimulator::SimulateSensors()
     //marker.type = visualization_msgs::msg::Marker::CUBE;
     marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
     //marker.action = visualization_msgs::msg::Marker::ADD;
-    /*marker.pose.position.x = ROVpose_.x();
-    marker.pose.position.y = ROVpose_.y();
-    marker.pose.position.z = altitude_;
-    marker.pose.orientation.x = q2.x();
-    marker.pose.orientation.y = q2.y();
-    marker.pose.orientation.z = q2.z();
-    marker.pose.orientation.w = q2.w();*/
+
+    //marker.pose.position.x = ROVpose_.x();
+    //marker.pose.position.y = ROVpose_.y();
+    //marker.pose.position.z = altitude_;
+    //marker.pose.orientation.x = q2.x();
+    //marker.pose.orientation.y = q2.y();
+    //marker.pose.orientation.z = q2.z();
+    //marker.pose.orientation.w = q2.w();
 
     marker.pose.position.x = ROVpose_.x();
     marker.pose.position.y = ROVpose_.y();
@@ -744,11 +752,7 @@ void VehicleSimulator::SimulateSensors()
     //marker.scale.x = 0.457;
     //marker.scale.y = 0.338;
     //marker.scale.z = 0.254;
-    /*
-    marker.scale.x = 1;
-    marker.scale.y = 1;
-    marker.scale.z = 1;
-    marker.color.a = 1.0; // Don't forget to set the alpha!*/
+
 
     //marker.color.r = 0.0;
     //marker.color.g = 0.0;
@@ -761,16 +765,17 @@ void VehicleSimulator::SimulateSensors()
 
     markerArray.markers.push_back(marker);
     visualizationPub_->publish(markerArray);
+*/
 
-    Eigen::Vector3d cableS_pos;
-    ctb::LatLong2LocalUTM(cableStartPos_, cableStart_altitude_, centroidLocation_, cableS_pos);
+    //Eigen::Vector3d cableS_pos;
+    //ctb::LatLong2LocalUTM(cableStartPos_, cableStart_altitude_, centroidLocation_, cableS_pos);
     tf2::Quaternion q_ulisse;
     q_ulisse.setRPY(groundTruth_UlisseMsg_.bodyframe_angular_position.roll,
                     groundTruth_UlisseMsg_.bodyframe_angular_position.pitch,
                     groundTruth_UlisseMsg_.bodyframe_angular_position.yaw);
 
-    Eigen::Vector3d cableE_pos;
-    ctb::LatLong2LocalUTM(cableEndPos_, cableEnd_altitude_, centroidLocation_, cableE_pos);
+    //Eigen::Vector3d cableE_pos;
+    //ctb::LatLong2LocalUTM(cableEndPos_, cableEnd_altitude_, centroidLocation_, cableE_pos);
 
     t_stamp_ROV.header.stamp = this->get_clock()->now();
     t_stamp_ROV.header.frame_id = "world";
@@ -890,6 +895,7 @@ void VehicleSimulator::CableLengthReferenceCB(const rov_msgs::msg::CableLengthRe
 }
 
 void VehicleSimulator::ASVsimulatedSysCB(const ulisse_msgs::msg::SimulatedSystem::SharedPtr msg){
+    ASVmsg = true;
     groundTruth_UlisseMsg_.inertialframe_linear_position.latlong.latitude = msg->inertialframe_linear_position.latlong.latitude;
     groundTruth_UlisseMsg_.inertialframe_linear_position.latlong.longitude = msg->inertialframe_linear_position.latlong.longitude;
     groundTruth_UlisseMsg_.inertialframe_linear_position.altitude = 0.0;

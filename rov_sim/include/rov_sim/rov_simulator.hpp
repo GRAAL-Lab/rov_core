@@ -116,7 +116,7 @@ class VehicleSimulator : public rclcpp::Node {
     rclcpp::Publisher<rov_msgs::msg::PressureData>::SharedPtr pressurePub_;
 
     //rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr visualizationPub_;
-    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr visualizationPub_;
+    //rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr visualizationPub_; // this one
     /*
     rclcpp::Publisher<ulisse_msgs::msg::DVLData>::SharedPtr dvlPub_;
     rclcpp::Publisher<ulisse_msgs::msg::FOGData>::SharedPtr fogPub_;
@@ -125,7 +125,7 @@ class VehicleSimulator : public rclcpp::Node {
     rclcpp::Publisher<ulisse_msgs::msg::ThrustersReference>::SharedPtr appliedMotorRefPub_;
 
     rclcpp::Publisher<ulisse_msgs::msg::LLCThrusters>::SharedPtr motorsDataPub_;
-    
+
     rclcpp::Subscription<ulisse_msgs::msg::ThrustersReference>::SharedPtr thrustersSub_;
 
     int gpsPubCounter_, compassPubCounter_, imuPubCounter_, magnetometerPubCounter_, ambientPubCounter_;
@@ -162,7 +162,7 @@ class VehicleSimulator : public rclcpp::Node {
     visualization_msgs::msg::Marker vehicleMarker_;
 
     int option; // motion of ROV
-
+    bool ASVmsg;
 
     bool LoadConfiguration(const std::string file_name);
     void SimulateActuation();
