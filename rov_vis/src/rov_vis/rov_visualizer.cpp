@@ -35,7 +35,7 @@ VehicleVisualizer::VehicleVisualizer(const std::string file_name)
 
     t_start_ = t_last_ = t_now_ = std::chrono::system_clock::now();
 
-    navDataSub_ = this->create_subscription<rov_msgs::msg::NavFilterData>(rov_msgs::topicnames::nav_filter_data,1, std::bind(&VehicleVisualizer::NavDataCB, this, _1));
+    navDataSub_ = this->create_subscription<rov_msgs::msg::NavFilterData>(rov_msgs::topicnames::nav_filter_data, 1, std::bind(&VehicleVisualizer::NavDataCB, this, _1));
     visualizationPub_ = this->create_publisher<visualization_msgs::msg::MarkerArray> ("visualization_marker_array", 0 );
 
     tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
@@ -186,8 +186,8 @@ void VehicleVisualizer::PublishTf(){
 
 
     //Eigen::Quaterniond eq1(worldF_ROV_bodyF_);
-    tf2::Quaternion ROVq;
-    ROVq.setRPY(navData_.bodyframe_angular_position.roll, navData_.bodyframe_angular_position.pitch, navData_.bodyframe_angular_position.yaw);
+    //tf2::Quaternion ROVq;
+    //ROVq.setRPY(navData_.bodyframe_angular_position.roll, navData_.bodyframe_angular_position.pitch, navData_.bodyframe_angular_position.yaw);
 
     Eigen::Vector3d ROVpose;
     ctb::LatLong ROVposLatLong(navData_.inertialframe_linear_position.latlong.latitude, navData_.inertialframe_linear_position.latlong.longitude);
@@ -209,7 +209,10 @@ void VehicleVisualizer::PublishTf(){
 
     tf2::Quaternion rov2_q;
     //rov2_q.setRPY(bodyF_orientation_.Roll(),bodyF_orientation_.Pitch(),bodyF_orientation_.Yaw() + M_PI/2);
-    rov2_q.setEuler(navData_.bodyframe_angular_position.pitch, -navData_.bodyframe_angular_position.roll, navData_.bodyframe_angular_position.yaw - M_PI/2);
+    rov2_q.setEuler(bodyF_ROVmesh_.Yaw(),bodyF_ROVmesh_.Pitch(),bodyF_ROVmesh_.Roll());
+    //tf2::Quaternion rov2_q;
+    //rov2_q.setRPY(bodyF_orientation_.Roll(),bodyF_orientation_.Pitch(),bodyF_orientation_.Yaw() + M_PI/2);
+    //rov2_q.setEuler(navData_.bodyframe_angular_position.pitch, -navData_.bodyframe_angular_position.roll, navData_.bodyframe_angular_position.yaw - M_PI/2);
 
     visualization_msgs::msg::Marker marker;
     visualization_msgs::msg::MarkerArray markerArray;
@@ -219,8 +222,8 @@ void VehicleVisualizer::PublishTf(){
     marker.ns = "rov_link";
     marker.id = 0;
     marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;    
-    marker.pose.position.x = ROVpose.y();
-    marker.pose.position.y = ROVpose.x();
+    marker.pose.position.x = ROVpose.y(); // inverted
+    marker.pose.position.y = ROVpose.x(); // inverted
     marker.pose.position.z = altitude;
     marker.pose.orientation.x = rov2_q.x();
     marker.pose.orientation.y = rov2_q.y();
@@ -239,6 +242,34 @@ void VehicleVisualizer::PublishTf(){
     markerArray.markers.push_back(marker);
     visualizationPub_->publish(markerArray);
 
+}
+
+void VehicleVisualizer::UpdateFrames(){
+    Eigen::RotationMatrix Rz, Ry, Rx;
+    double roll, pitch, yaw;
+    roll = navData_.bodyframe_angular_position.roll;
+    pitch = navData_.bodyframe_angular_position.pitch;
+    yaw = navData_.bodyframe_angular_position.yaw;
+    Rz << cos(yaw), -sin(yaw), 0,
+        sin(yaw), cos(yaw), 0,
+        0, 0, 1;
+
+    Ry << cos(pitch), 0, sin(pitch),
+        0, 1, 0,
+        -sin(pitch), 0, cos(pitch);
+
+    Rx << 1, 0, 0,
+        0, cos(roll), -sin(roll),
+        0, sin(roll), cos(roll);
+
+    worldF_ROV_bodyF_ = Rz * Ry * Rx;
+
+    Eigen::RotationMatrix Rz_n;
+    Rz_n << cos(M_PI/2), -sin(M_PI/2), 0,
+        sin(M_PI/2), cos(M_PI/2), 0,
+        0, 0, 1;
+    worldF_ROV_meshF_ = worldF_ROV_bodyF_ * Rz_n;
+    bodyF_ROVmesh_ = worldF_ROV_meshF_.eulerAngles(2, 1, 0);
 }
 
 void VehicleVisualizer::NavDataCB(const rov_msgs::msg::NavFilterData::SharedPtr msg) { navData_ = *msg; }

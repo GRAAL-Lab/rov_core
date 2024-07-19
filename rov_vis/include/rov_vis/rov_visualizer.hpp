@@ -75,6 +75,11 @@ class VehicleVisualizer : public rclcpp::Node {
 
     void NavDataCB(const rov_msgs::msg::NavFilterData::SharedPtr msg);
 
+    Eigen::RotationMatrix worldF_ROV_bodyF_;
+    Eigen::RotationMatrix worldF_ASV_bodyF_;
+    Eigen::RotationMatrix worldF_ROV_meshF_;
+    rml::EulerRPY bodyF_ROVmesh_;
+
 
 public:
     VehicleVisualizer(const std::string file_name);
@@ -84,6 +89,7 @@ public:
     void ExecuteStep();
     void AssignMessage(std::array<double,6>& msg, const Eigen::Vector6d& vector);
     void PublishTf();
+    void UpdateFrames();
 
     double GetCurrentTimeStamp() const;
 
