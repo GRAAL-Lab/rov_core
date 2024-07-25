@@ -64,6 +64,7 @@ class VehicleSimulator : public rclcpp::Node {
     ctb::LatLong vehiclePos_, vehiclePreviousPos_, centroidLocation_;
     double altitude_, Pre_altitude_;
     Eigen::Vector3d ROVpose_,ROVprepose_;
+    Eigen::Vector3d centerUTM_;
 
     // cable variable
     ctb::LatLong cableStartPos_, cableEndPos_;
@@ -175,6 +176,7 @@ public:
     void ExecuteStep();
     void SimulateSensors();
     void PublishSensors();
+    void PublishTf();
 
     void AssignMessage(std::array<double,6>& msg, const Eigen::Vector6d& vector);
 

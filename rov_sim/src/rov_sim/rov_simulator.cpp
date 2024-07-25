@@ -115,6 +115,8 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     ctb::LatLong2LocalUTM(vehiclePos_, altitude_, centroidLocation_, pos_initial);
     std::cout << "pos_init" << pos_initial << std::endl;
 
+    ctb::LatLong2LocalUTM(centroidLocation_, 0.0, centroidLocation_, centerUTM_);
+
     // Initializing vectors and matrices
     eta_initial.setZero();
     eta_initial.segment(0,3) = pos_initial;
@@ -650,8 +652,8 @@ void VehicleSimulator::SimulateSensors()
     AssignMessage(forcesMsg_.bodyframe_f_thruster, rovModel_.getFthruster_bodyF());
     AssignMessage(forcesMsg_.bodyframe_g, rovModel_.getg_bodyF());
 
-    Eigen::Vector3d LaSpezia_centroid;
-    ctb::LatLong2LocalUTM(centroidLocation_, 0.0, centroidLocation_, LaSpezia_centroid);
+    //Eigen::Vector3d LaSpezia_centroid;
+    //ctb::LatLong2LocalUTM(centroidLocation_, 0.0, centroidLocation_, LaSpezia_centroid);
 
     //Eigen::Vector3d vehicle_pos;
     //ctb::LatLong2LocalUTM(vehiclePos_, altitude_, centroidLocation_, vehicle_pos);
@@ -660,12 +662,17 @@ void VehicleSimulator::SimulateSensors()
 
     //q.setEuler( bodyF_orientation_.Pitch(), bodyF_orientation_.Roll(), bodyF_orientation_.Yaw()); // i used it
 
+
+
+}
+
+void VehicleSimulator::PublishTf(){
     t_stamp.header.stamp = this->get_clock()->now();
     t_stamp.header.frame_id = "world";
-    t_stamp.child_frame_id = "centroid";
-    t_stamp.transform.translation.x = LaSpezia_centroid(0);
-    t_stamp.transform.translation.y = LaSpezia_centroid(1);
-    t_stamp.transform.translation.z = LaSpezia_centroid(2);
+    t_stamp.child_frame_id = "NED";
+    t_stamp.transform.translation.x = centerUTM_(0);
+    t_stamp.transform.translation.y = centerUTM_(1);
+    t_stamp.transform.translation.z = centerUTM_(2);
     t_stamp.transform.rotation.x = 1.0;
     t_stamp.transform.rotation.y = 0.0;
     t_stamp.transform.rotation.z = 0.0;
@@ -676,18 +683,9 @@ void VehicleSimulator::SimulateSensors()
     //Eigen::Quaterniond eq1(worldF_ROV_bodyF_);
     tf2::Quaternion q2;
     q2.setRPY(bodyF_orientation_.Roll(),bodyF_orientation_.Pitch(),bodyF_orientation_.Yaw());
-    //tf2::quaternionEigenToTF(eq1, q1);
-    //transform.setRotation(q);
-    /*
-    t_stamp_ROV.transform.rotation.x = q2.x();
-    t_stamp_ROV.transform.rotation.y = q2.y();
-    t_stamp_ROV.transform.rotation.z = q2.z();
-    t_stamp_ROV.transform.rotation.w = q2.w();
 
-    tf_broadcaster_ROV->sendTransform(t_stamp_ROV);
-*/
     t_stamp_ROV.header.stamp = this->get_clock()->now();
-    t_stamp_ROV.header.frame_id = "world";
+    t_stamp_ROV.header.frame_id = "NED";
     t_stamp_ROV.child_frame_id = "ROV";
     t_stamp_ROV.transform.translation.x = ROVpose_.x();
     t_stamp_ROV.transform.translation.y = ROVpose_.y();
@@ -708,65 +706,6 @@ void VehicleSimulator::SimulateSensors()
     pt_.pose.orientation.z = q2.z();
     pt_.pose.orientation.w = q2.w();
 
-
-/*
-    tf2::Quaternion rov2_q;
-    //rov2_q.setRPY(bodyF_orientation_.Roll(),bodyF_orientation_.Pitch(),bodyF_orientation_.Yaw() + M_PI/2);
-    rov2_q.setEuler(bodyF_ROVmesh_.Yaw(),bodyF_ROVmesh_.Pitch(),bodyF_ROVmesh_.Roll());
-
-    //visualization_msgs::msg::Marker marker;
-    visualization_msgs::msg::Marker marker;
-    visualization_msgs::msg::MarkerArray markerArray;
-
-    marker.header.frame_id = "world";
-    marker.header.stamp = this->get_clock()->now();
-    marker.ns = "rov_link";
-    marker.id = 0;
-    //marker.type = visualization_msgs::msg::Marker::CUBE;
-    marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
-    //marker.action = visualization_msgs::msg::Marker::ADD;
-
-    //marker.pose.position.x = ROVpose_.x();
-    //marker.pose.position.y = ROVpose_.y();
-    //marker.pose.position.z = altitude_;
-    //marker.pose.orientation.x = q2.x();
-    //marker.pose.orientation.y = q2.y();
-    //marker.pose.orientation.z = q2.z();
-    //marker.pose.orientation.w = q2.w();
-
-    marker.pose.position.x = ROVpose_.x();
-    marker.pose.position.y = ROVpose_.y();
-    marker.pose.position.z = altitude_;
-    marker.pose.orientation.x = rov2_q.x();
-    marker.pose.orientation.y = rov2_q.y();
-    marker.pose.orientation.z = rov2_q.z();
-    marker.pose.orientation.w = rov2_q.w();
-    marker.scale.x = 1;
-    marker.scale.y = 1;
-    marker.scale.z = 1;
-    marker.color.a = 1.0; // Don't forget to set the alpha!
-    marker.color.r = 0.859;
-    marker.color.g = 1.0;
-    marker.color.b = 1.0;
-
-    //marker.scale.x = 0.457;
-    //marker.scale.y = 0.338;
-    //marker.scale.z = 0.254;
-
-
-    //marker.color.r = 0.0;
-    //marker.color.g = 0.0;
-    //marker.color.b = 1.0;
-
-    //only if using a MESH_RESOURCE marker type:
-    //marker.mesh_resource = "package://pr2_description/meshes/base_v0/base.dae";/home/graal/ros2_ws/src/rov_core/rov_sim/model
-
-    marker.mesh_resource = "package://rov_sim/meshes/BlueRov2.dae";
-
-    markerArray.markers.push_back(marker);
-    visualizationPub_->publish(markerArray);
-*/
-
     //Eigen::Vector3d cableS_pos;
     //ctb::LatLong2LocalUTM(cableStartPos_, cableStart_altitude_, centroidLocation_, cableS_pos);
     tf2::Quaternion q_ulisse;
@@ -778,10 +717,10 @@ void VehicleSimulator::SimulateSensors()
     //ctb::LatLong2LocalUTM(cableEndPos_, cableEnd_altitude_, centroidLocation_, cableE_pos);
 
     t_stamp_ROV.header.stamp = this->get_clock()->now();
-    t_stamp_ROV.header.frame_id = "world";
+    t_stamp_ROV.header.frame_id = "NED";
     t_stamp_ROV.child_frame_id = "cableS";
-    t_stamp_ROV.transform.translation.x = cableStart_cartesian_.x(); // inverted
-    t_stamp_ROV.transform.translation.y = cableStart_cartesian_.y(); // inverted
+    t_stamp_ROV.transform.translation.x = cableStart_cartesian_.y(); // inverted
+    t_stamp_ROV.transform.translation.y = cableStart_cartesian_.x(); // inverted
     t_stamp_ROV.transform.translation.z = cableStart_cartesian_.z();
     t_stamp_ROV.transform.rotation.x = q_ulisse.x();
     t_stamp_ROV.transform.rotation.y = q_ulisse.y();
@@ -790,10 +729,10 @@ void VehicleSimulator::SimulateSensors()
     tf_broadcaster_ROV->sendTransform(t_stamp_ROV);
 
     t_stamp_ROV.header.stamp = this->get_clock()->now();
-    t_stamp_ROV.header.frame_id = "world";
+    t_stamp_ROV.header.frame_id = "NED";
     t_stamp_ROV.child_frame_id = "cableE";
-    t_stamp_ROV.transform.translation.x = cableEnd_cartesian_.x();
-    t_stamp_ROV.transform.translation.y = cableEnd_cartesian_.y();
+    t_stamp_ROV.transform.translation.x = cableEnd_cartesian_.y();
+    t_stamp_ROV.transform.translation.y = cableEnd_cartesian_.x();
     t_stamp_ROV.transform.translation.z = cableEnd_cartesian_.z();
     t_stamp_ROV.transform.rotation.x = q2.x();
     t_stamp_ROV.transform.rotation.y = q2.y();
@@ -801,13 +740,15 @@ void VehicleSimulator::SimulateSensors()
     t_stamp_ROV.transform.rotation.w = q2.w();
     tf_broadcaster_ROV->sendTransform(t_stamp_ROV);
 
-    cableMsg_.stamp.sec = now_stamp_secs;
+    long now_nanosecs = (std::chrono::duration_cast<std::chrono::nanoseconds>(t_now_.time_since_epoch())).count();
+    auto now_stamp_secs = static_cast<unsigned int>(now_nanosecs / static_cast<int>(1E9));
+    auto now_stamp_nanosecs = static_cast<unsigned int>(now_nanosecs % static_cast<int>(1E9));
     cableMsg_.stamp.nanosec = now_stamp_nanosecs;
+    cableMsg_.stamp.sec = now_stamp_secs;
     cableMsg_.released_cable_length = rovModel_.GetCableReleasedLength();
     cableMsg_.layer_n = rovModel_.GetCableLayer();
     cableMsg_.winding_radius = rovModel_.GetCableWindingRadius();
     cableMsg_.winch_rpm = rovModel_.GetWinchRPM();
-
 }
 
 void VehicleSimulator::AssignMessage(std::array<double,6>& msg,const Eigen::Vector6d& vector){

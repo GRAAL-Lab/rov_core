@@ -61,19 +61,32 @@ class VehicleVisualizer : public rclcpp::Node {
 
     std::shared_ptr<VisualizerConfiguration> config_;
 
-    geometry_msgs::msg::TransformStamped t_stamp;
-    geometry_msgs::msg::TransformStamped t_stamp_ROV;
+    geometry_msgs::msg::TransformStamped t_stamp_;
+    geometry_msgs::msg::TransformStamped t_stamp_ROV_;
 
     rclcpp::Subscription<rov_msgs::msg::NavFilterData>::SharedPtr navDataSub_;
     rov_msgs::msg::NavFilterData navData_;
+    rclcpp::Subscription<rov_msgs::msg::SimulatedSystem>::SharedPtr simulatedSysSub_;
+    rov_msgs::msg::SimulatedSystem simData_;
 
-    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr visualizationPub_;
+    rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr visualizationPub_;
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_ROV;
+
+    visualization_msgs::msg::Marker rovMarker_;
+
+    Eigen::Vector3d rovSimUTM_;
+    ctb::LatLong rovSimLatLong_;
+    tf2::Quaternion rovSimQ_;
+
+    Eigen::Vector3d rovNavUTM_;
+    ctb::LatLong rovNavLatLong_;
+    tf2::Quaternion rovNavQ_;
 
     bool LoadConfiguration(const std::string file_name);
 
     void NavDataCB(const rov_msgs::msg::NavFilterData::SharedPtr msg);
+    void SimSystemCB(const rov_msgs::msg::SimulatedSystem::SharedPtr msg);
 
     Eigen::RotationMatrix worldF_ROV_bodyF_;
     Eigen::RotationMatrix worldF_ASV_bodyF_;
@@ -90,6 +103,7 @@ public:
     void AssignMessage(std::array<double,6>& msg, const Eigen::Vector6d& vector);
     void PublishTf();
     void UpdateFrames();
+    void PublishMarker();
 
     double GetCurrentTimeStamp() const;
 

@@ -659,7 +659,7 @@ void ROVController::PublishTF(){
     t_stamp_goals.header.stamp.nanosec = now_stamp_nanosecs;
 
     //t_stamp_goals.header.stamp = this->get_clock()->now();
-    t_stamp_goals.header.frame_id = "world";
+    t_stamp_goals.header.frame_id = "NED";
 
 
     if (uFsm_.GetCurrentStateName() == rov::states::ID::hold) {

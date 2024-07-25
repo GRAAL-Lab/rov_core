@@ -32,15 +32,29 @@ VehicleVisualizer::VehicleVisualizer(const std::string file_name)
     }
 
     std::cout << "centroid" << centroidLocation_ << std::endl;
+    ctb::LatLong2LocalUTM(centroidLocation_, 0.0, centroidLocation_, centerUTM_);
 
     t_start_ = t_last_ = t_now_ = std::chrono::system_clock::now();
 
     navDataSub_ = this->create_subscription<rov_msgs::msg::NavFilterData>(rov_msgs::topicnames::nav_filter_data, 1, std::bind(&VehicleVisualizer::NavDataCB, this, _1));
-    visualizationPub_ = this->create_publisher<visualization_msgs::msg::MarkerArray> ("visualization_marker_array", 0 );
+    simulatedSysSub_ = this->create_subscription<rov_msgs::msg::SimulatedSystem>(rov_msgs::topicnames::simulated_system,1, std::bind(&VehicleVisualizer::SimSystemCB, this, _1));
+    visualizationPub_ = this->create_publisher<visualization_msgs::msg::Marker> ("visualization_marker", 0 );
 
     tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(this);
     tf_broadcaster_ROV = std::make_shared<tf2_ros::TransformBroadcaster>(this);
     
+    rovMarker_.header.frame_id = "NED";
+    rovMarker_.scale.x = 1;
+    rovMarker_.scale.y = 1;
+    rovMarker_.scale.z = 1;
+    rovMarker_.color.a = 1.0; // Don't forget to set the alpha!
+    rovMarker_.color.r = 0.859;
+    rovMarker_.color.g = 1.0;
+    rovMarker_.color.b = 1.0;
+    rovMarker_.ns = "rov_link";
+    rovMarker_.id = 0;
+    rovMarker_.type = visualization_msgs::msg::Marker::MESH_RESOURCE;
+    rovMarker_.mesh_resource = "package://rov_sim/meshes/BlueRov2.dae";
 
     // Main function timer
     int msRunPeriod = 1.0 / (config_->rate) * 1000;
@@ -83,7 +97,6 @@ bool VehicleVisualizer::LoadConfiguration(const std::string file_name)
     };
 
     centroidLocation_ = ctb::LatLong(centroidLocationTmp[0], centroidLocationTmp[1]);
-    ctb::LatLong2LocalUTM(centroidLocation_, 0.0, centroidLocation_, centerUTM_);
 
     ///////////////////////////////////////////////////////////////////////////////
     /////       LOAD SIMULATOR CONFIGURATION
@@ -119,7 +132,9 @@ void VehicleVisualizer::Run()
     ExecuteStep();
     //SimulateSensors();
     //PublishSensors();
+    UpdateFrames();
     PublishTf();
+    PublishMarker();
 }
 
 void VehicleVisualizer::ExecuteStep()
@@ -172,76 +187,76 @@ double VehicleVisualizer::GetCurrentTimeStamp() const
 
 void VehicleVisualizer::PublishTf(){
 
-    t_stamp.header.stamp = this->get_clock()->now();
-    t_stamp.header.frame_id = "world";
-    t_stamp.child_frame_id = "centroid";
-    t_stamp.transform.translation.x = centerUTM_(0);
-    t_stamp.transform.translation.y = centerUTM_(1);
-    t_stamp.transform.translation.z = centerUTM_(2);
-    t_stamp.transform.rotation.x = 1.0;
-    t_stamp.transform.rotation.y = 0.0;
-    t_stamp.transform.rotation.z = 0.0;
-    t_stamp.transform.rotation.w = 0.0;
-    tf_broadcaster_->sendTransform(t_stamp);
+    t_stamp_.header.stamp = this->get_clock()->now();
+    t_stamp_.header.frame_id = "world";
+    t_stamp_.child_frame_id = "NED";
+    t_stamp_.transform.translation.x = centerUTM_(0);
+    t_stamp_.transform.translation.y = centerUTM_(1);
+    t_stamp_.transform.translation.z = centerUTM_(2);
+    t_stamp_.transform.rotation.x = 1.0;
+    t_stamp_.transform.rotation.y = 0.0;
+    t_stamp_.transform.rotation.z = 0.0;
+    t_stamp_.transform.rotation.w = 0.0;
+    tf_broadcaster_->sendTransform(t_stamp_);
 
 
     //Eigen::Quaterniond eq1(worldF_ROV_bodyF_);
     //tf2::Quaternion ROVq;
     //ROVq.setRPY(navData_.bodyframe_angular_position.roll, navData_.bodyframe_angular_position.pitch, navData_.bodyframe_angular_position.yaw);
 
-    Eigen::Vector3d ROVpose;
-    ctb::LatLong ROVposLatLong(navData_.inertialframe_linear_position.latlong.latitude, navData_.inertialframe_linear_position.latlong.longitude);
-    double altitude = navData_.inertialframe_linear_position.altitude;
-    ctb::LatLong2LocalUTM(ROVposLatLong, altitude, centroidLocation_, ROVpose);
-/*
-    t_stamp_ROV.header.stamp = this->get_clock()->now();
-    t_stamp_ROV.header.frame_id = "world";
-    t_stamp_ROV.child_frame_id = "ROV";
-    t_stamp_ROV.transform.translation.x = ROVpose.x();
-    t_stamp_ROV.transform.translation.y = ROVpose.y();
-    t_stamp_ROV.transform.translation.z = altitude;
-    t_stamp_ROV.transform.rotation.x = ROVq.x();
-    t_stamp_ROV.transform.rotation.y = ROVq.y();
-    t_stamp_ROV.transform.rotation.z = ROVq.z();
-    t_stamp_ROV.transform.rotation.w = ROVq.w();
-    tf_broadcaster_ROV->sendTransform(t_stamp_ROV);
-*/
+    rovSimLatLong_.latitude = simData_.inertialframe_linear_position.latlong.latitude;
+    rovSimLatLong_.longitude = simData_.inertialframe_linear_position.latlong.longitude;
+    ctb::LatLong2LocalUTM(rovSimLatLong_, simData_.inertialframe_linear_position.altitude, centroidLocation_, rovSimUTM_);
 
-    tf2::Quaternion rov2_q;
+    //tf2::Quaternion q1;
+    rovSimQ_.setRPY(simData_.bodyframe_angular_position.roll, simData_.bodyframe_angular_position.pitch, simData_.bodyframe_angular_position.yaw);
+
+
+
+    t_stamp_ROV_.header.stamp = this->get_clock()->now();
+    t_stamp_ROV_.header.frame_id = "NED";
+    t_stamp_ROV_.child_frame_id = "ROV";
+    t_stamp_ROV_.transform.translation.x = rovSimUTM_.y();
+    t_stamp_ROV_.transform.translation.y = rovSimUTM_.x();
+    t_stamp_ROV_.transform.translation.z = rovSimUTM_.z();
+    t_stamp_ROV_.transform.rotation.x = rovSimQ_.x();
+    t_stamp_ROV_.transform.rotation.y = rovSimQ_.y();
+    t_stamp_ROV_.transform.rotation.z = rovSimQ_.z();
+    t_stamp_ROV_.transform.rotation.w = rovSimQ_.w();
+    tf_broadcaster_ROV->sendTransform(t_stamp_ROV_);
+
+
+    //tf2::Quaternion rov2_q;
     //rov2_q.setRPY(bodyF_orientation_.Roll(),bodyF_orientation_.Pitch(),bodyF_orientation_.Yaw() + M_PI/2);
-    rov2_q.setEuler(bodyF_ROVmesh_.Yaw(),bodyF_ROVmesh_.Pitch(),bodyF_ROVmesh_.Roll());
+
     //tf2::Quaternion rov2_q;
     //rov2_q.setRPY(bodyF_orientation_.Roll(),bodyF_orientation_.Pitch(),bodyF_orientation_.Yaw() + M_PI/2);
     //rov2_q.setEuler(navData_.bodyframe_angular_position.pitch, -navData_.bodyframe_angular_position.roll, navData_.bodyframe_angular_position.yaw - M_PI/2);
 
-    visualization_msgs::msg::Marker marker;
-    visualization_msgs::msg::MarkerArray markerArray;
 
-    marker.header.frame_id = "world";
-    marker.header.stamp = this->get_clock()->now();
-    marker.ns = "rov_link";
-    marker.id = 0;
-    marker.type = visualization_msgs::msg::Marker::MESH_RESOURCE;    
-    marker.pose.position.x = ROVpose.y(); // inverted
-    marker.pose.position.y = ROVpose.x(); // inverted
-    marker.pose.position.z = altitude;
-    marker.pose.orientation.x = rov2_q.x();
-    marker.pose.orientation.y = rov2_q.y();
-    marker.pose.orientation.z = rov2_q.z();
-    marker.pose.orientation.w = rov2_q.w();
-    marker.scale.x = 1;
-    marker.scale.y = 1;
-    marker.scale.z = 1;
-    marker.color.a = 1.0; // Don't forget to set the alpha!
-    marker.color.r = 0.859;
-    marker.color.g = 1.0;
-    marker.color.b = 1.0;
 
-    marker.mesh_resource = "package://rov_sim/meshes/BlueRov2.dae";
 
-    markerArray.markers.push_back(marker);
-    visualizationPub_->publish(markerArray);
+    //markerArray.markers.push_back(marker);
 
+
+}
+
+void VehicleVisualizer::PublishMarker(){
+
+    rovNavLatLong_.latitude = navData_.inertialframe_linear_position.latlong.latitude;
+    rovNavLatLong_.longitude = navData_.inertialframe_linear_position.latlong.longitude;
+    ctb::LatLong2LocalUTM(rovNavLatLong_, navData_.inertialframe_linear_position.altitude, centroidLocation_, rovNavUTM_);
+    rovNavQ_.setEuler(bodyF_ROVmesh_.Yaw(),bodyF_ROVmesh_.Pitch(),bodyF_ROVmesh_.Roll());
+
+    rovMarker_.header.stamp = this->get_clock()->now();
+    rovMarker_.pose.position.x = rovNavUTM_.y(); // inverted
+    rovMarker_.pose.position.y = rovNavUTM_.x(); // inverted
+    rovMarker_.pose.position.z = navData_.inertialframe_linear_position.altitude;
+    rovMarker_.pose.orientation.x = rovNavQ_.x();
+    rovMarker_.pose.orientation.y = rovNavQ_.y();
+    rovMarker_.pose.orientation.z = rovNavQ_.z();
+    rovMarker_.pose.orientation.w = rovNavQ_.w();
+    visualizationPub_->publish(rovMarker_);
 }
 
 void VehicleVisualizer::UpdateFrames(){
@@ -265,13 +280,16 @@ void VehicleVisualizer::UpdateFrames(){
     worldF_ROV_bodyF_ = Rz * Ry * Rx;
 
     Eigen::RotationMatrix Rz_n;
-    Rz_n << cos(M_PI/2), -sin(M_PI/2), 0,
-        sin(M_PI/2), cos(M_PI/2), 0,
+    Rz_n << cos(-M_PI/2), -sin(-M_PI/2), 0,
+        sin(-M_PI/2), cos(-M_PI/2), 0,
         0, 0, 1;
     worldF_ROV_meshF_ = worldF_ROV_bodyF_ * Rz_n;
+    //worldF_ROV_meshF_ = worldF_ROV_bodyF_;
     bodyF_ROVmesh_ = worldF_ROV_meshF_.eulerAngles(2, 1, 0);
 }
 
 void VehicleVisualizer::NavDataCB(const rov_msgs::msg::NavFilterData::SharedPtr msg) { navData_ = *msg; }
+
+void VehicleVisualizer::SimSystemCB(const rov_msgs::msg::SimulatedSystem::SharedPtr msg) { simData_ = *msg; }
 
 }
