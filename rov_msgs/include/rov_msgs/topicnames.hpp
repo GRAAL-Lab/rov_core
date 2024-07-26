@@ -17,20 +17,7 @@ const std::string sensor_imu = "/rov/llc/sensor/imu";
 const std::string sensor_magnetometer = "/rov/llc/sensor/magnetometer";
 const std::string sensor_pressure = "/rov/llc/sensor/pressure";
 
-//const std::string sensor_imu_orientus = "/ulisse/llc/sensor/imu_orientus";
-
-//const std::string sensor_dvl = "/ulisse/llc/sensor/dvl";
-//const std::string sensor_fog = "/ulisse/llc/sensor/fog";
 const std::string llc_thrusters_reference_perc = "/rov/llc/reference_thrusters_percentage"; // thrusters_data
-//const std::string llc_thrusters_applied_perc = "/ulisse/llc/applied_thrusters_percentage";     // motor_applied_ref
-//const std::string llc_status = "/ulisse/llc/status";
-//const std::string llc_config = "/ulisse/llc/config";
-//const std::string llc_thrusters = "/ulisse/llc/thrusters"; //llc_motors
-//const std::string llc_version = "/ulisse/llc/version";
-//const std::string llc_ack = "/ulisse/llc/ack";
-//const std::string llc_battery_left = "/ulisse/llc/battery_left";
-//const std::string llc_battery_right = "/ulisse/llc/battery_right";
-//const std::string llc_sw485status = "/ulisse/llc/sw485status";
 
 // SIM
 const std::string simulated_system = "/rov/simulated_system";
@@ -48,6 +35,7 @@ const std::string classic_pid_control = "/rov/ctrl/classic_pid_control_info";
 //const std::string computed_torque_control = "/ulisse/ctrl/computed_torque_control_info";
 //const std::string sliding_mode_control = "/ulisse/ctrl/sliding_mode_info";
 const std::string reference_velocities = "/rov/ctrl/reference_velocities";
+//const std::string reference_motor_winch = "/rov/ctrl/reference_motor_winch"; //ASV-ROV
 //const std::string simulated_velocity_sensor = "/ulisse/ctrl/water_relative_surge";
 //const std::string feedback_gui = "/ulisse/ctrl/feedback_gui";
 //const std::string set_cruise_control_service = "/ulisse/ctrl/set_cruise_control";

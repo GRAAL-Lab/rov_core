@@ -12,6 +12,7 @@
 #include "rov_msgs/msg/pressure_data.hpp"
 #include "rov_msgs/msg/cable_data.hpp"
 #include "rov_msgs/msg/cable_length_reference.hpp"
+#include "rov_msgs/msg/winch_motor_reference.hpp"
 
 #include "rov_sim/simulator_defines.hpp"
 #include "underwater_vehicle_model/underwater_vehicle.hpp"
@@ -94,6 +95,7 @@ class VehicleSimulator : public rclcpp::Node {
     rov_msgs::msg::SimulatedSystem groundTruth_UlisseMsg_;
     rov_msgs::msg::Forces forcesMsg_;
     rov_msgs::msg::CableData cableMsg_;
+    rov_msgs::msg::WinchMotorReference winchMotorReferenceMsg_;
     //rov_msgs::msg::CableLengthReference cableRefMsg_;
 
     geometry_msgs::msg::PoseStamped pt_;
@@ -116,8 +118,6 @@ class VehicleSimulator : public rclcpp::Node {
     rclcpp::Publisher<rov_msgs::msg::Magnetometer>::SharedPtr magnetometerPub_;
     rclcpp::Publisher<rov_msgs::msg::PressureData>::SharedPtr pressurePub_;
 
-    //rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr visualizationPub_;
-    //rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr visualizationPub_; // this one
     /*
     rclcpp::Publisher<ulisse_msgs::msg::DVLData>::SharedPtr dvlPub_;
     rclcpp::Publisher<ulisse_msgs::msg::FOGData>::SharedPtr fogPub_;
@@ -141,9 +141,10 @@ class VehicleSimulator : public rclcpp::Node {
 
     rclcpp::Subscription<rov_msgs::msg::ThrustersReference>::SharedPtr thrustersSub_;
     rclcpp::Subscription<rov_msgs::msg::CableLengthReference>::SharedPtr winchSub_;
+    rclcpp::Subscription<rov_msgs::msg::WinchMotorReference>::SharedPtr winchMotorRefSub_;
     rclcpp::Subscription<ulisse_msgs::msg::SimulatedSystem>::SharedPtr simulatedSystemAsvSub_;
 
-    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr posePub_;
+    //rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr posePub_;
 
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
     std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_ROV;
@@ -203,6 +204,7 @@ public:
     void ThrustersReferenceCB(const rov_msgs::msg::ThrustersReference::SharedPtr msg);
     void CableLengthReferenceCB(const rov_msgs::msg::CableLengthReference::SharedPtr msg);
     void ASVsimulatedSysCB(const ulisse_msgs::msg::SimulatedSystem::SharedPtr msg);
+    void WinchMotorReferenceCB(const rov_msgs::msg::WinchMotorReference::SharedPtr msg);
 };
 }
 

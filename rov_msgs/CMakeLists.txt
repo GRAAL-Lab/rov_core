@@ -47,6 +47,7 @@ rosidl_generate_interfaces(rov_msgs
   "msg/VehicleStatus.msg"
   "msg/CableData.msg"
   "msg/CableLengthReference.msg"
+  "msg/WinchMotorReference.msg"
 
   # Commands
   "msg/CommandHold.msg"
