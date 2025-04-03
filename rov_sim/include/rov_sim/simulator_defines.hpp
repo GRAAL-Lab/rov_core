@@ -5,7 +5,7 @@
 #include <memory>
 #include <random>
 
-#include "underwater_vehicle_model/underwater_vehicle.hpp"
+#include "rov_model/rov_model.hpp"
 #include "rov_msgs/futils.hpp"
 
 #include "GeographicLib/Geodesic.hpp"

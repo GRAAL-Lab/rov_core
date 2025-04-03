@@ -16,7 +16,7 @@
 
 //#include "rov_sim/simulator_defines.hpp"
 #include "rov_vis/visualizer_defines.hpp"
-#include "underwater_vehicle_model/underwater_vehicle.hpp"
+#include "rov_model/rov_model.hpp"
 
 #include "rov_msgs/msg/simulated_system.hpp"
 //#include "ulisse_msgs/msg/simulated_system.hpp"

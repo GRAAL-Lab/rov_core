@@ -13,7 +13,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(underwater_vehicle_model REQUIRED)
+find_package(rov_model REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(ctrl_toolbox REQUIRED)
 find_package(rov_msgs REQUIRED)
@@ -40,7 +40,7 @@ include_directories(
   include
   ${rov_msgs_INCLUDE_DIRS}
   ${rov_ctrl_INCLUDE_DIRS}
-  ${underwater_vehicle_model_INCLUDE_DIRS}
+  ${rov_model_INCLUDE_DIRS}
 )
 
 ## Libraries
@@ -57,7 +57,7 @@ ament_target_dependencies(
     tf2_ros
     visualization_msgs
     ) #add rov message
-target_link_libraries(VehicleSimulatorClass ${underwater_vehicle_model_LIBRARIES} Geographic rml)
+target_link_libraries(VehicleSimulatorClass ${rov_model_LIBRARIES} Geographic rml)
 
 ## Executables
 add_executable(simulator_node src/simulator_node.cpp)
@@ -67,7 +67,7 @@ ament_target_dependencies(
     rov_msgs
     ulisse_msgs
     rov_ctrl
-    underwater_vehicle_model
+    rov_model
     )
 target_link_libraries(simulator_node VehicleSimulatorClass config++)
 

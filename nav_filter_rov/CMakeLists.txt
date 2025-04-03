@@ -14,7 +14,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(underwater_vehicle_model REQUIRED)
+find_package(rov_model REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(ctrl_toolbox REQUIRED)
 find_package(rov_msgs REQUIRED)
@@ -58,8 +58,8 @@ set(nav_filter_rov_lib_sources
 
 ## Libraries
 add_library(nav_filter_rov_lib ${nav_filter_rov_lib_sources})
-ament_target_dependencies(nav_filter_rov_lib rclcpp std_msgs rov_msgs underwater_vehicle_model)
-target_link_libraries(nav_filter_rov_lib ${underwater_vehicle_model_LIBRARIES} Geographic rml) # !!fsm ctrl_toolbox
+ament_target_dependencies(nav_filter_rov_lib rclcpp std_msgs rov_msgs rov_model)
+target_link_libraries(nav_filter_rov_lib ${rov_model_LIBRARIES} Geographic rml) # !!fsm ctrl_toolbox
 
 ## Executables
 add_executable(nav_filter_node src/nav_filter_node.cpp)

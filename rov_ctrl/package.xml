@@ -14,7 +14,7 @@
   <build_depend>rclcpp</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>rov_msgs</build_depend>
-  <build_depend>underwater_vehicle_model</build_depend>
+  <build_depend>rov_model</build_depend>
   <build_depend>rml</build_depend>
   <build_depend>fsm</build_depend>
   <build_depend>ctrl_toolbox</build_depend>
@@ -25,7 +25,7 @@
   <exec_depend>rclcpp</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>rov_msgs</exec_depend>
-  <exec_depend>underwater_vehicle_model</exec_depend>
+  <exec_depend>rov_model</exec_depend>
   <exec_depend>rml</exec_depend>
   <exec_depend>fsm</exec_depend>
   <exec_depend>ctrl_toolbox</exec_depend>

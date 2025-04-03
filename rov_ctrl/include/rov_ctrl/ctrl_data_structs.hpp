@@ -11,7 +11,7 @@
 //#include "surface_vehicle_model/surfacevehiclemodel.hpp"
 #include "rov_msgs/msg/task_status.hpp"
 
-#include "underwater_vehicle_model/underwater_vehicle.hpp"
+#include "rov_model/rov_model.hpp"
 //#include "rov_msgs/
 
 

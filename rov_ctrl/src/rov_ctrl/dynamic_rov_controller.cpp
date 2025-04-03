@@ -336,7 +336,7 @@ bool DynamicRovController::LoadDclConfiguration(std::shared_ptr<DCLConfiguration
         return false;
 
     // Read the ROV_MODEL config file
-    package_share_directory = ament_index_cpp::get_package_share_directory("underwater_vehicle_model");
+    package_share_directory = ament_index_cpp::get_package_share_directory("rov_model");
     confPath = package_share_directory + "/conf/blueROV.conf";
     std::cout << "PATH TO ROV_MODEL CONF FILE (DCL): " << confPath << std::endl;
 

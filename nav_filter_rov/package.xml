@@ -16,7 +16,7 @@
   <build_depend>rml</build_depend>
 
 
-  <build_depend>underwater_vehicle_model</build_depend>
+  <build_depend>rov_model</build_depend>
 
   <exec_depend>rclcpp</exec_depend>
   <exec_depend>std_msgs</exec_depend>
@@ -25,7 +25,7 @@
   <exec_depend>rml</exec_depend>
 
 
-  <exec_depend>underwater_vehicle_model</exec_depend>
+  <exec_depend>rov_model</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>

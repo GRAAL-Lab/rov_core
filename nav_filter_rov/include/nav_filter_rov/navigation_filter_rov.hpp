@@ -34,7 +34,7 @@
 
 #include "surface_vehicle_model/surfacevehiclemodel.hpp"
 */
-#include "underwater_vehicle_model/underwater_vehicle.hpp"
+#include "rov_model/rov_model.hpp"
 #include "rov_msgs/msg/simulated_system.hpp"
 #include "rov_msgs/topicnames.hpp"
 #include <libconfig.h++>

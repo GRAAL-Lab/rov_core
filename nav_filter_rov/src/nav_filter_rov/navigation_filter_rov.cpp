@@ -160,7 +160,7 @@ bool NavigationFilter::LoadConfiguration()
     libconfig::Config confObj;
 
     // Read the blueROV2 MODEL config file
-    std::string package_share_directory = ament_index_cpp::get_package_share_directory("underwater_vehicle_model");
+    std::string package_share_directory = ament_index_cpp::get_package_share_directory("rov_model");
     std::string modelConfPath = package_share_directory + "/conf/blueROV.conf";
 
     RCLCPP_INFO(this->get_logger(), "PATH TO blueROV2_MODEL CONF FILE (NAV): %s", modelConfPath.c_str());

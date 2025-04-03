@@ -32,7 +32,7 @@
 #include "rov_msgs/msg/dynamic_pid_control.hpp"
 #include "rov_msgs/msg/vehicle_status.hpp"
 #include "rov_msgs/msg/forces.hpp"
-#include "underwater_vehicle_model/underwater_vehicle.hpp"
+#include "rov_model/rov_model.hpp"
 #include "rov_ctrl/ctrl_data_structs.hpp"
 #include "rov_msgs/srv/user_input.hpp"
 
@@ -55,7 +55,7 @@ class DynamicRovController : public rclcpp::Node {
 
     // rov model
     //SurfaceVehicleModel ulisseModel;
-    UnderwaterVehicle rovModel_;
+    Rov rovModel_;
     Eigen::MatrixXd rov_allocationMatrix;
 
     //rclcpp::Service<ulisse_msgs::srv::ResetConfiguration>::SharedPtr srvResetConf_;
