@@ -159,7 +159,7 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     worldF_cable_ending =  worldF_ROV_bodyF_ * bodyF_cable_ending_;
     worldF_cable_ending =  worldF_cable_ending + pos_initial;
     ctb::LocalUTM2LatLong(worldF_cable_ending, centroidLocation_, cableEndPos_, cableEnd_altitude_);
-    ref_cableLength_ = 10.0;
+    ref_cableLength_ = 20.0;
     rovModel_.SetCableLength(ref_cableLength_);
 
     std::cout << "Motion type : hold" << std::endl;
@@ -444,7 +444,7 @@ void VehicleSimulator::SimulateActuation()
 
     //float v;
     //rovModel_.RunCableWinch(1.0, v);
-    rovModel_.UpdateCableLength(winchMotorReferenceMsg_.rpm_percentage, Ts_);
+    //rovModel_.UpdateCableLength(winchMotorReferenceMsg_.rpm_percentage, Ts_);
 }
 
 void VehicleSimulator::SimulateSensors()
@@ -629,6 +629,16 @@ void VehicleSimulator::SimulateSensors()
     AssignMessage(forcesMsg_.bodyframe_f_thruster, rovModel_.getFthruster_bodyF());
     AssignMessage(forcesMsg_.bodyframe_g, rovModel_.getg_bodyF());
 
+    //long now_nanosecs = (std::chrono::duration_cast<std::chrono::nanoseconds>(t_now_.time_since_epoch())).count();
+    //auto now_stamp_secs = static_cast<unsigned int>(now_nanosecs / static_cast<int>(1E9));
+    //auto now_stamp_nanosecs = static_cast<unsigned int>(now_nanosecs % static_cast<int>(1E9));
+    cableMsg_.stamp.nanosec = now_stamp_nanosecs;
+    cableMsg_.stamp.sec = now_stamp_secs;
+    cableMsg_.released_cable_length = rovModel_.GetCableReleasedLength();
+    cableMsg_.layer_n = rovModel_.GetCableLayer();
+    cableMsg_.winding_radius = rovModel_.GetCableWindingRadius();
+    cableMsg_.winch_rpm = rovModel_.GetWinchRPM();
+
 }
 
 void VehicleSimulator::PublishTf(){
@@ -698,15 +708,7 @@ void VehicleSimulator::PublishTf(){
     t_stamp_ROV.transform.rotation.w = q2.w();
     tf_broadcaster_ROV->sendTransform(t_stamp_ROV);
 
-    long now_nanosecs = (std::chrono::duration_cast<std::chrono::nanoseconds>(t_now_.time_since_epoch())).count();
-    auto now_stamp_secs = static_cast<unsigned int>(now_nanosecs / static_cast<int>(1E9));
-    auto now_stamp_nanosecs = static_cast<unsigned int>(now_nanosecs % static_cast<int>(1E9));
-    cableMsg_.stamp.nanosec = now_stamp_nanosecs;
-    cableMsg_.stamp.sec = now_stamp_secs;
-    cableMsg_.released_cable_length = rovModel_.GetCableReleasedLength();
-    cableMsg_.layer_n = rovModel_.GetCableLayer();
-    cableMsg_.winding_radius = rovModel_.GetCableWindingRadius();
-    cableMsg_.winch_rpm = rovModel_.GetWinchRPM();
+
 }
 
 void VehicleSimulator::AssignMessage(std::array<double,6>& msg,const Eigen::Vector6d& vector){
