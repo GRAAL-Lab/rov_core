@@ -20,6 +20,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -49,6 +50,22 @@ ament_target_dependencies(
     ) #add rov message
 target_link_libraries(VehicleVisualizerClass ${rov_model_LIBRARIES} Geographic rml)
 
+add_library(StoneFishROVVisualizerClass src/rov_vis/rov_stonefish.cpp)
+ament_target_dependencies(
+    StoneFishROVVisualizerClass
+    rclcpp
+    rov_msgs
+    #ulisse_msgs
+    #rov_ctrl
+    ament_index_cpp
+    geometry_msgs
+    tf2
+    tf2_ros
+    visualization_msgs
+    nav_msgs
+    ) #add rov message
+target_link_libraries(StoneFishROVVisualizerClass ${rov_model_LIBRARIES} Geographic rml)
+
 ## Executables
 add_executable(visualizer_node src/visualizer_node.cpp)
 ament_target_dependencies(
@@ -61,8 +78,21 @@ ament_target_dependencies(
     )
 target_link_libraries(visualizer_node VehicleVisualizerClass config++)
 
+add_executable(stonefish_node src/stonefish_node.cpp)
+ament_target_dependencies(
+    stonefish_node
+    rclcpp std_msgs
+    rov_msgs
+    nav_msgs
+    #ulisse_msgs
+    #rov_ctrl
+    #underwater_vehicle_model
+    )
+target_link_libraries(stonefish_node StoneFishROVVisualizerClass config++)
+
 install(TARGETS
   visualizer_node
+  stonefish_node
   #sim_from_log_node
   DESTINATION lib/${PROJECT_NAME})
 
