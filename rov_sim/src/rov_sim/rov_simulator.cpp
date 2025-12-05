@@ -35,6 +35,7 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     //, fogPubCounter_(0)
     , realTime_(false) // we set a manual set sample time later
     , ASVmsg(false)
+    , initialCableLength(false)
 {
 
     config_ = std::make_shared<rov::SimulatorConfiguration>();
@@ -86,8 +87,8 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
 
     thrustersSub_ = this->create_subscription<rov_msgs::msg::ThrustersReference>(rov_msgs::topicnames::llc_thrusters_reference_perc, 1,
         std::bind(&VehicleSimulator::ThrustersReferenceCB, this, _1));
-    winchSub_ = this->create_subscription<rov_msgs::msg::CableLengthReference>(rov_msgs::topicnames::reference_cable_length, 1,
-                                                 std::bind(&VehicleSimulator::CableLengthReferenceCB, this, _1));
+    cableReferenceSub_ = this->create_subscription<rov_msgs::msg::CableReference>(rov_msgs::topicnames::reference_cable, 1,
+                                                 std::bind(&VehicleSimulator::CableReferenceCB, this, _1));
     winchMotorRefSub_ = this->create_subscription<rov_msgs::msg::WinchMotorReference>("/winch/reference_motor", 10,
                                                                                        std::bind(&VehicleSimulator::WinchMotorReferenceCB, this, _1));
     simulatedSystemAsvSub_ = this->create_subscription<ulisse_msgs::msg::SimulatedSystem>("/ulisse/simulated_system", 1,
@@ -159,8 +160,9 @@ VehicleSimulator::VehicleSimulator(const std::string file_name)
     worldF_cable_ending =  worldF_ROV_bodyF_ * bodyF_cable_ending_;
     worldF_cable_ending =  worldF_cable_ending + pos_initial;
     ctb::LocalUTM2LatLong(worldF_cable_ending, centroidLocation_, cableEndPos_, cableEnd_altitude_);
-    ref_cableLength_ = 20.0;
-    rovModel_.SetCableLength(ref_cableLength_);
+
+    //refCable_.length = 6.0;
+    rovModel_.SetCableLength(8.0);
 
     std::cout << "Motion type : hold" << std::endl;
     option = rov::inputs::ID::hold;
@@ -439,9 +441,23 @@ void VehicleSimulator::SimulateActuation()
 
     cableStart_altitude_ = 0.0;
 
-    // Set Cable Length
-    rovModel_.RunCableWinchToReachLength(rovModel_.Cable_params.winch_rpm, ref_cableLength_, Ts_);
+    // set winch rpm based on the reference recieved velocity
+    rovModel_.RunCableWinchVelocity(refCable_.velocity);
+    rovModel_.UpdateCableLength(rovModel_.GetWinchRPM(), Ts_);
+//    // Set Cable Length
+//    if(!initialCableLength){
+//        bool finished;
+//        rovModel_.RunCableWinchToReachLength(rovModel_.Cable_params.winch_rpm, refCable_.length, Ts_, finished);
+//        if(finished)
+//            initialCableLength = true;
+//    }
+//    // Set Cable Velocity
+//    else{
+//        rovModel_.RunCableWinchVelocity(refCable_.velocity);
+//    }
 
+
+    //
     //float v;
     //rovModel_.RunCableWinch(1.0, v);
     //rovModel_.UpdateCableLength(winchMotorReferenceMsg_.rpm_percentage, Ts_);
@@ -638,6 +654,7 @@ void VehicleSimulator::SimulateSensors()
     cableMsg_.layer_n = rovModel_.GetCableLayer();
     cableMsg_.winding_radius = rovModel_.GetCableWindingRadius();
     cableMsg_.winch_rpm = rovModel_.GetWinchRPM();
+    cableMsg_.cable_vel = CableVelocity();
 
 }
 
@@ -767,6 +784,13 @@ void VehicleSimulator::PublishSensors()
     */
 }
 
+double VehicleSimulator::CableVelocity(){
+    cableLength_now_ = rovModel_.GetCableReleasedLength();
+    double vel = (cableLength_last_ - cableLength_now_)/Ts_;
+    cableLength_last_ = cableLength_now_;
+    return vel;
+}
+
 double VehicleSimulator::GetCurrentTimeStamp() const
 {
     long now_nanosecs = (std::chrono::duration_cast<std::chrono::nanoseconds>(t_now_.time_since_epoch())).count();
@@ -791,8 +815,8 @@ void VehicleSimulator::ThrustersReferenceCB(const rov_msgs::msg::ThrustersRefere
     //motorTimeout_.Start();
 }
 
-void VehicleSimulator::CableLengthReferenceCB(const rov_msgs::msg::CableLengthReference::SharedPtr msg){
-    ref_cableLength_ = msg->reference_cable_length;
+void VehicleSimulator::CableReferenceCB(const rov_msgs::msg::CableReference::SharedPtr msg){
+    refCable_ = *msg;
 }
 
 void VehicleSimulator::WinchMotorReferenceCB(const rov_msgs::msg::WinchMotorReference::SharedPtr msg){

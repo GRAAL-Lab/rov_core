@@ -23,7 +23,7 @@ const std::string llc_thrusters_reference_perc = "/rov/llc/reference_thrusters_p
 const std::string simulated_system = "/rov/simulated_system";
 const std::string forces = "/rov/forces";
 const std::string cable_data = "/winch/cable_data";
-const std::string reference_cable_length = "/winch/reference_cable_length";
+const std::string reference_cable = "/winch/reference_cable";
 
 // NAV FILTER
 const std::string nav_filter_data = "/rov/nav_filter/data";

@@ -11,7 +11,7 @@
 #include "rov_msgs/msg/magnetometer.hpp"
 #include "rov_msgs/msg/pressure_data.hpp"
 #include "rov_msgs/msg/cable_data.hpp"
-#include "rov_msgs/msg/cable_length_reference.hpp"
+#include "rov_msgs/msg/cable_reference.hpp"
 #include "rov_msgs/msg/winch_motor_reference.hpp"
 
 #include "rov_sim/simulator_defines.hpp"
@@ -69,7 +69,7 @@ class VehicleSimulator : public rclcpp::Node {
 
     // cable variable
     ctb::LatLong cableStartPos_, cableEndPos_;
-    float cableLength_, ref_cableLength_;
+    float cableLength_; //, ref_cableLength_;
     double cableStart_altitude_, cableEnd_altitude_;
     Eigen::Vector3d bodyF_cable_ending_, bodyF_cable_starting_;
 
@@ -95,6 +95,7 @@ class VehicleSimulator : public rclcpp::Node {
     rov_msgs::msg::SimulatedSystem groundTruth_UlisseMsg_;
     rov_msgs::msg::Forces forcesMsg_;
     rov_msgs::msg::CableData cableMsg_;
+    double cableLength_now_, cableLength_last_;
     rov_msgs::msg::WinchMotorReference winchMotorReferenceMsg_;
     //rov_msgs::msg::CableLengthReference cableRefMsg_;
 
@@ -111,6 +112,7 @@ class VehicleSimulator : public rclcpp::Node {
     rov_msgs::msg::IMUData imuMsg_;
     rov_msgs::msg::Magnetometer magnetometerMsg_;
     rov_msgs::msg::PressureData pressureMsg_;
+    rov_msgs::msg::CableReference refCable_;
 
     rclcpp::Publisher<rov_msgs::msg::GPSData>::SharedPtr gpsPub_;
     rclcpp::Publisher<rov_msgs::msg::Compass>::SharedPtr compassPub_;
@@ -140,7 +142,7 @@ class VehicleSimulator : public rclcpp::Node {
     rclcpp::Publisher<rov_msgs::msg::CableData>::SharedPtr cableDataPub_;
 
     rclcpp::Subscription<rov_msgs::msg::ThrustersReference>::SharedPtr thrustersSub_;
-    rclcpp::Subscription<rov_msgs::msg::CableLengthReference>::SharedPtr winchSub_;
+    rclcpp::Subscription<rov_msgs::msg::CableReference>::SharedPtr cableReferenceSub_;
     rclcpp::Subscription<rov_msgs::msg::WinchMotorReference>::SharedPtr winchMotorRefSub_;
     rclcpp::Subscription<ulisse_msgs::msg::SimulatedSystem>::SharedPtr simulatedSystemAsvSub_;
 
@@ -169,6 +171,8 @@ class VehicleSimulator : public rclcpp::Node {
     bool LoadConfiguration(const std::string file_name);
     void SimulateActuation();
 
+    bool initialCableLength;
+
 public:
     VehicleSimulator(const std::string file_name);
 
@@ -178,6 +182,7 @@ public:
     void SimulateSensors();
     void PublishSensors();
     void PublishTf();
+    double CableVelocity();
 
     void AssignMessage(std::array<double,6>& msg, const Eigen::Vector6d& vector);
 
@@ -191,7 +196,7 @@ public:
     /**
      * @brief Set if simulation should run in Realtime or not
      *
-     * By default `realtime` is set to true, so the simulator runs in real-time. This means that,
+     * By default `realSimulateActuationtime` is set to true, so the simulator runs in real-time. This means that,
      * even if a Ts (sample time) has been set, the simulator will use actual time differences
      * calculated with std::chrono to simulate time. If instead we set `realtime` to false, we can
      * run the simulator at any frequency, and time will proceed by steps of Ts.
@@ -202,7 +207,7 @@ public:
     double GetCurrentTimeStamp() const;
 
     void ThrustersReferenceCB(const rov_msgs::msg::ThrustersReference::SharedPtr msg);
-    void CableLengthReferenceCB(const rov_msgs::msg::CableLengthReference::SharedPtr msg);
+    void CableReferenceCB(const rov_msgs::msg::CableReference::SharedPtr msg);
     void ASVsimulatedSysCB(const ulisse_msgs::msg::SimulatedSystem::SharedPtr msg);
     void WinchMotorReferenceCB(const rov_msgs::msg::WinchMotorReference::SharedPtr msg);
 };

@@ -46,7 +46,7 @@ rosidl_generate_interfaces(rov_msgs
   "msg/DynamicPidControl.msg"
   "msg/VehicleStatus.msg"
   "msg/CableData.msg"
-  "msg/CableLengthReference.msg"
+  "msg/CableReference.msg"
   "msg/WinchMotorReference.msg"
 
   # Commands
