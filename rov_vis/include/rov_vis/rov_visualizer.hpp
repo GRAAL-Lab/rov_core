@@ -11,7 +11,7 @@
 #include "rov_msgs/msg/magnetometer.hpp"
 #include "rov_msgs/msg/pressure_data.hpp"
 #include "rov_msgs/msg/cable_data.hpp"
-#include "rov_msgs/msg/cable_length_reference.hpp"
+#include "rov_msgs/msg/cable_reference.hpp"
 #include "rov_msgs/msg/nav_filter_data.hpp"
 
 //#include "rov_sim/simulator_defines.hpp"

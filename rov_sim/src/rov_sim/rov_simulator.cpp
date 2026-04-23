@@ -282,6 +282,10 @@ void VehicleSimulator::ExecuteStep()
     Pre_altitude_ = altitude_;
 
     ROVprepose_ = ROVpose_;
+
+    cableLength_now_ = rovModel_.GetCableReleasedLength();
+    //double vel = (cableLength_last_ - cableLength_now_)/Ts_;
+    cableLength_last_ = cableLength_now_;
 }
 
 void VehicleSimulator::SimulateActuation()
@@ -654,7 +658,8 @@ void VehicleSimulator::SimulateSensors()
     cableMsg_.layer_n = rovModel_.GetCableLayer();
     cableMsg_.winding_radius = rovModel_.GetCableWindingRadius();
     cableMsg_.winch_rpm = rovModel_.GetWinchRPM();
-    cableMsg_.cable_vel = CableVelocity();
+    //cableMsg_.cable_vel = CableVelocity();
+    cableMsg_.cable_vel = rovModel_.GetCableActualVelocity();
 
 }
 
@@ -785,9 +790,9 @@ void VehicleSimulator::PublishSensors()
 }
 
 double VehicleSimulator::CableVelocity(){
-    cableLength_now_ = rovModel_.GetCableReleasedLength();
+    //cableLength_now_ = rovModel_.GetCableReleasedLength();
     double vel = (cableLength_last_ - cableLength_now_)/Ts_;
-    cableLength_last_ = cableLength_now_;
+    //cableLength_last_ = cableLength_now_;
     return vel;
 }
 
