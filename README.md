@@ -4,43 +4,29 @@ A ROS 2 meta-package providing full-stack control software for a BlueROV2 (stand
 
 ## Packages
 
-| Package | Description |
-|---------|-------------|
-| **nav_filter_rov** | Navigation filter — fuses IMU, GPS, DVL, compass, pressure and FOG sensor data to produce vehicle state estimates and sea current estimates consumed by the controllers. |
-| **rov_msgs** | Shared ROS 2 message and service definitions used across all packages (e.g. `VehicleStatus`, `NavFilterData`, `Forces`, `ControlCommand`). |
-| **rov_ctrl** | ROV controllers — exposes a *kinematic* control node (`kinematic_control_node`, TPIK-based) and a *dynamic* control node (`dynamic_control_node`) that compute thruster references from high-level commands. |
-| **rov_sim** | Dynamic simulator — integrates the BlueROV2 hydrodynamic model (via `marine_vehicle_models`) at up to 100 Hz, and can also replay pre-recorded sensor logs. |
-| **rov_vis** | Visualisation node — publishes vehicle pose and geometry markers to RViz and optionally bridges with the Stonefish simulator. |
+  - **nav_filter_rov**: Navigation filter — fuses IMU, GPS, DVL, compass, pressure and FOG sensor data to produce vehicle state estimates and sea current estimates consumed by the controllers.
+  - **rov_msgs**: Shared ROS 2 message and service definitions used across all packages (e.g. `VehicleStatus`, `NavFilterData`, `Forces`, `ControlCommand`).
+  - **rov_ctrl**: ROV controllers — exposes a *kinematic* control node (`kinematic_control_node`, TPIK-based) and a *dynamic* control node (`dynamic_control_node`) that compute thruster references from high-level commands.
+  - **rov_sim**: Dynamic simulator — integrates the BlueROV2 hydrodynamic model (via `marine_vehicle_models`) at up to 100 Hz, and can also replay pre-recorded sensor logs.
+  - **rov_vis**: Visualisation node — publishes vehicle pose and geometry markers to RViz and optionally bridges with the Stonefish simulator.
+
+The external package  **marine_vehicle_models** must be added to the src of the colcon workspace: https://github.com/GRAAL-Lab/marine_vehicle_models
 
 ## Dependencies
 
-Install in the order listed below to respect build dependencies.
+  - **ROS 2 Humble** (Ubuntu 22.04): https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debians.html
 
-### ROS 2
+Install in the order listed below to respect build dependencies:
 
-- **ROS 2 Galactic** (Ubuntu 20.04): https://docs.ros.org/en/galactic/Installation/Ubuntu-Install-Debians.html
-  > ⚠️ ROS 2 Galactic reached end-of-life in December 2022. Consider migrating to a supported distribution such as [Humble](https://docs.ros.org/en/humble/Installation.html) or [Jazzy](https://docs.ros.org/en/jazzy/Installation.html).
+  - **libconfig++**: `sudo apt install libgps-dev libconfig++-dev`
+  - **SISL**: https://github.com/SINTEF-Geometry/SISL
+  - **rml**: https://github.com/GRAAL-Lab/rml
+  - **fsm**: https://github.com/GRAAL-Lab/fsm
+  - **tpik**: https://github.com/GRAAL-Lab/tpik
+  - **ikcl**: https://github.com/GRAAL-Lab/ikcl
+  - **ctrl_toolbox**: https://github.com/GRAAL-Lab/ctrl_toolbox
+  - **sisl_toolbox**: https://github.com/GRAAL-Lab/sisl_toolbox
 
-### System libraries
-
-```bash
-sudo apt install libgps-dev libconfig++-dev
-```
-
-### External ROS 2 / C++ packages
-
-Clone each repository into your ROS 2 workspace `src/` directory and build with `colcon`.
-
-| Package | URL |
-|---------|-----|
-| **rml** | http://bitbucket.org/isme_robotics/rml |
-| **fsm** | http://bitbucket.org/isme_robotics/fsm |
-| **tpik** | http://bitbucket.org/isme_robotics/tpik |
-| **ikcl** | https://bitbucket.org/isme_robotics/ikcl |
-| **ctrl_toolbox** | http://bitbucket.org/isme_robotics/ctrl_toolbox |
-| **sisl_toolbox** | http://bitbucket.org/isme_robotics/sisl_toolbox |
-| **marine_vehicle_models** | https://bitbucket.org/isme_robotics/marine_vehicle_models |
-| **SISL** | https://github.com/SINTEF-Geometry/SISL |
 
 ## Building
 
